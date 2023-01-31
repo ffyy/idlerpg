@@ -14,9 +14,9 @@ intents.members = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-@tree.command(name = "sup", description = "this should be a slash sup command", guild=discord.Object(id=GUILD_ID))
-async def sup_command(interaction):
-    await interaction.response.send_message("sup bro")
+@tree.command(name = "sup", description = "slash command with input string", guild=discord.Object(id=GUILD_ID))
+async def sup_command(interaction: discord.Interaction, inputstring: str):
+    await interaction.response.send_message(f'sup bro, you gave the string {inputstring}')
 
 @client.event
 async def on_ready():
