@@ -1,7 +1,6 @@
 import os
-import random
-
 import discord
+import charutils
 from discord import app_commands
 from dotenv import load_dotenv
 
@@ -14,13 +13,14 @@ intents.members = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-@tree.command(name = "sup", description = "slash command with input string", guild=discord.Object(id=GUILD_ID))
-async def sup_command(interaction: discord.Interaction, inputstring: str):
-    await interaction.response.send_message(f'sup bro, you gave the string {inputstring}')
+@tree.command(name = "newchar", description = "Create a character", guild=discord.Object(id=GUILD_ID))
+async def newchar_command(interaction: discord.Interaction, name: str):
+    charutils.saveToDisk(name)
+    await interaction.response.send_message(f'I created a file in /chars/ called {name}.txt')
 
 @client.event
 async def on_ready():
     await tree.sync(guild=discord.Object(id=GUILD_ID))
-    print("command synced")
+    print("commands synced")
 
 client.run(TOKEN)

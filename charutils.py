@@ -10,6 +10,3 @@ def saveToDisk(content):
     f = open(os.path.join("chars", content + ".txt"), "a")
     f.write(content)
     f.close()
-
-
-saveToDisk("tuut")
