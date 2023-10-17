@@ -1,7 +1,7 @@
 import json
 import os
 
-def saveToDisk(content):
+def save_to_disk(content):
     try:
         os.mkdir("chars")
     except Exception:
