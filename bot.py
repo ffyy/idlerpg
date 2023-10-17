@@ -34,8 +34,8 @@ class RpgEngine(discord.Client):
         channel = self.get_channel(CHANNEL.id)
         #print(CHANNEL_ID)
         #print(channel)
-        await channel.send(self.counter)
-        self.counter += 1
+        #await channel.send(self.counter)
+        #self.counter += 1
 
     @spam_messages.before_loop
     async def before_spamming(self):
@@ -47,7 +47,10 @@ client = RpgEngine(intents=intents)
 
 @client.tree.command(name="newchar",description="Create a character")
 async def newchar(interaction: discord.Interaction, name: str):
-    charutils.save_to_disk(name)
-    await interaction.response.send_message(f'I created a file in /chars/ called {name}.txt')
+    await interaction.response.send_message(charutils.create_character(name))
+
+@client.tree.command(name="getchar",description="Get character JSON") #testing command
+async def getchar(interaction: discord.Interaction, name: str):
+    await interaction.response.send_message(charutils.get_character(name))
 
 client.run(TOKEN)
