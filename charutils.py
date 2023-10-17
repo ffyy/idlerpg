@@ -28,7 +28,6 @@ def save_to_disk(character: Character):
             with open(os.path.join(file_name + ".bak"), "a") as bakfile:
                 bakfile.write('\n\n' + str(datetime.now()) + '\n')
                 shutil.copyfileobj(txtfile, bakfile)
-                #bakfile.write('\n\n')             
     
     #print("save_to_disk_says " + str(vars(character)))
     character_json = json.dumps(vars(character))
