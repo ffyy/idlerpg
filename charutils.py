@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+from datetime import datetime
 
 class Character:
     def __init__(
@@ -23,7 +24,11 @@ def save_to_disk(character: Character):
     file_name = "chars/" + character.name
     #print(file_name)
     if os.path.isfile(file_name + ".txt"): 
-        shutil.copyfile(file_name + ".txt", file_name + ".bak")
+        with open(os.path.join(file_name + ".txt"), "r") as txtfile:
+            with open(os.path.join(file_name + ".bak"), "a") as bakfile:
+                bakfile.write('\n\n' + str(datetime.now()) + '\n')
+                shutil.copyfileobj(txtfile, bakfile)
+                #bakfile.write('\n\n')             
     
     #print("save_to_disk_says " + str(vars(character)))
     character_json = json.dumps(vars(character))
