@@ -41,10 +41,9 @@ def create_character(name):
         raise Exception("save_to_disk failed") 
     
 def get_character(name):
-        file_path = os.path.join("chars/" + name + ".txt")
-        f = open(file_path)
-        json_character = json.load(f)
-        #print(json_character) #debug
-        loaded_character = Character(json_character['name'], json_character['level'], json_character['current_xp'])
-        return "The name is " + loaded_character.name + " and it is level " + str(loaded_character.level)
-        #return "tuut tuut"
+    file_path = os.path.join("chars/" + name + ".txt")
+    f = open(file_path)
+    json_character = json.load(f)
+    #print(json_character) #debug
+    loaded_character = Character(json_character['name'], json_character['level'], json_character['current_xp'])
+    return "The name is " + loaded_character.name + " and it is level " + str(loaded_character.level)
