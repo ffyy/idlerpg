@@ -53,4 +53,8 @@ async def newchar(interaction: discord.Interaction, name: str):
 async def getchar(interaction: discord.Interaction, name: str):
     await interaction.response.send_message(charutils.get_character(name))
 
+@client.tree.command(name="updategear",description="Get character JSON") #testing command
+async def updategear(interaction: discord.Interaction, name: str, value: int):
+    await interaction.response.send_message(charutils.update_gear(name, value))
+
 client.run(TOKEN)
