@@ -54,6 +54,11 @@ client = RpgEngine(intents=intents)
 async def newchar(interaction: discord.Interaction, name: str):
     await interaction.response.send_message(charutils.create_character(name))
 
+@client.tree.command(name="levelup",description="Level up a character by name") #testing command
+async def levelup(interaction: discord.Interaction, name: str):
+    await interaction.response.send_message(charutils.level_up(name))
+
+'''
 @client.tree.command(name="getchar",description="Get character JSON") #testing command
 async def getchar(interaction: discord.Interaction, name: str):
     await interaction.response.send_message(charutils.get_character(name))
@@ -61,6 +66,6 @@ async def getchar(interaction: discord.Interaction, name: str):
 @client.tree.command(name="updategear",description="Get character JSON") #testing command
 async def updategear(interaction: discord.Interaction, name: str, value: int):
     await interaction.response.send_message(charutils.update_gear(name, value))
-
+'''
 print("starting bot")
 client.run(TOKEN)

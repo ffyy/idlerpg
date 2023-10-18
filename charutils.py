@@ -1,64 +1,66 @@
 import json
 import os
 import shutil
+import sqlite3
 from datetime import datetime
+from dotenv import load_dotenv
+
+DB_PATH = os.getenv("DB_PATH")
 
 class Character:
     def __init__(
             self, 
+            id_,
             name,
             level,
             current_xp,
-            gear
+            gear_id
             ):
+        self.id_ = id_
         self.name = name
         self.level = level
         self.current_xp = current_xp
-        self.gear = gear
+        self.gear_id = gear_id
 
 class Gear:
-    def __init__(self, gearscore):
+    def __init__(
+            self,
+            id_,
+            gearscore
+            ):
+        self.id_ = id_
         self.gearscore = gearscore
 
-def save_to_disk(character: Character):
-    if not os.path.exists("chars"):
-        try:
-            os.mkdir("chars")
-        except Exception:
-            print(str(Exception))
+def save_to_db(character: Character):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    if (character.id_ is None):
+        cur.execute("INSERT INTO character(name,level,current_xp,gear_id) VALUES (?,?,?,?)", (character.name, character.level, character.current_xp, character.gear_id))
+        print("Creating new character")
+        db.commit()
+    else:
+        cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.gear_id, character.id_))
+        print("Updating old character")
+        db.commit()
 
-    file_name = "chars/" + character.name
-    if os.path.isfile(file_name + ".txt"): 
-        with open(os.path.join(file_name + ".txt"), "r") as txtfile:
-            with open(os.path.join(file_name + ".bak"), "a") as bakfile:
-                bakfile.write('\n\n' + str(datetime.now()) + '\n')
-                shutil.copyfileobj(txtfile, bakfile)
-    
-    character_json = json.dumps(vars(character), default=lambda x: x.__dict__)
-    f = open(os.path.join(file_name + ".txt"), "w")
-    f.write(character_json)
-    f.close()
+def get_from_db(name):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM character WHERE name = ?", (name,))
+    db_character = cur.fetchone()
+    character = Character(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4])
+    return character
 
 def create_character(name):
-    new_character = Character(name, 0, 0, Gear(5))
+    new_character = Character(None, name, 0, 0, None)
     try:
-        save_to_disk(new_character)
-        return "Saved character called " + new_character.name + " to disk"
+        save_to_db(new_character)
+        return "Saved character called " + new_character.name + " to database"
     except:
-        raise Exception("save_to_disk failed") 
-    
-def get_character(name):
-    file_path = os.path.join("chars/" + name + ".txt")
-    f = open(file_path)
-    json_character = json.load(f)
-    loaded_character = Character(json_character['name'], json_character['level'], json_character['current_xp'], Gear(json_character['gear']['gearscore']))
-    return "The name is " + loaded_character.name + " and it has gear of level " + str(loaded_character.gear.gearscore)
+        return "Something went wrong" 
 
-def update_gear(name, value):
-    file_path = os.path.join("chars/" + name + ".txt")
-    f = open(file_path)
-    json_character = json.load(f)
-    loaded_character = Character(json_character['name'], json_character['level'], json_character['current_xp'], Gear(json_character['gear']['gearscore']))
-    loaded_character.gear.gearscore += value
-    save_to_disk(loaded_character)
-    return str(loaded_character.name) + " now has a gearscore of " + str(loaded_character.gear.gearscore)
+def level_up(name):
+    character = get_from_db(name)
+    character.level += 1
+    save_to_db(character)
+    return "Character " + character.name + " is now level " + str(character.level)
