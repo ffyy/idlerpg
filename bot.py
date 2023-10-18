@@ -1,16 +1,21 @@
 import os
 import discord
 import charutils
+import initialsetup
 from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
 from discord.ext import commands
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD_ID = os.getenv('GUILD_ID') 
-CHANNEL_ID = os.getenv('CHANNEL_ID')
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = os.getenv("GUILD_ID") 
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 
+if not os.path.exists(".conf"):
+    print("Doing initial setup")
+    initialsetup.do()
+    
 #lets turn guild and channel into objects we can use
 GUILD = discord.Object(id=int(GUILD_ID))
 CHANNEL = discord.Object(id=int(CHANNEL_ID))
@@ -57,4 +62,5 @@ async def getchar(interaction: discord.Interaction, name: str):
 async def updategear(interaction: discord.Interaction, name: str, value: int):
     await interaction.response.send_message(charutils.update_gear(name, value))
 
+print("starting bot")
 client.run(TOKEN)
