@@ -58,14 +58,25 @@ async def newchar(interaction: discord.Interaction, name: str):
 async def levelup(interaction: discord.Interaction, name: str):
     await interaction.response.send_message(charutils.level_up(name))
 
-'''
-@client.tree.command(name="getchar",description="Get character JSON") #testing command
-async def getchar(interaction: discord.Interaction, name: str):
-    await interaction.response.send_message(charutils.get_character(name))
+CHARACTER_CLASSES = [
+    discord.SelectOption(label="Rogue", value="1", description="Rogues need to be lucky to get ahead"),
+    discord.SelectOption(label="Fighter", value="2", description="Fighters are solid in any situation")
+]
 
-@client.tree.command(name="updategear",description="Get character JSON") #testing command
-async def updategear(interaction: discord.Interaction, name: str, value: int):
-    await interaction.response.send_message(charutils.update_gear(name, value))
-'''
+class ClassView(discord.ui.View):
+    def __init__(self, name):
+        super().__init__(timeout=100)
+        self.name = name
+
+    @discord.ui.select(placeholder="Select a class", options=CHARACTER_CLASSES, max_values=1)
+    async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction.response.defer()
+        response_message = charutils.create_character(self.name, int(select.values[0]))
+        await interaction.followup.edit_message(interaction.message.id, content=(response_message), view=None)
+
+@client.tree.command(name="test", description="Create a new character")
+async def test(interaction: discord.Interaction, name: str):
+    await interaction.response.send_message("You need to pick a class also!", view=ClassView(name))
+
 print("starting bot")
 client.run(TOKEN)

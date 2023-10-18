@@ -1,10 +1,9 @@
-import json
 import os
-import shutil
 import sqlite3
-from datetime import datetime
+import traceback
 from dotenv import load_dotenv
 
+load_dotenv()
 DB_PATH = os.getenv("DB_PATH")
 
 class Character:
@@ -14,12 +13,14 @@ class Character:
             name,
             level,
             current_xp,
+            class_id,
             gear_id
             ):
         self.id_ = id_
         self.name = name
         self.level = level
         self.current_xp = current_xp
+        self.class_id = class_id
         self.gear_id = gear_id
 
 class Gear:
@@ -31,15 +32,26 @@ class Gear:
         self.id_ = id_
         self.gearscore = gearscore
 
+class CharacterClass:
+    def __init__(
+            self,
+            id_,
+            name,
+            tactic
+    ):
+        self.id_ = id_
+        self.name = name
+        self.tactic = tactic
+
 def save_to_db(character: Character):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     if (character.id_ is None):
-        cur.execute("INSERT INTO character(name,level,current_xp,gear_id) VALUES (?,?,?,?)", (character.name, character.level, character.current_xp, character.gear_id))
+        cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
         print("Creating new character")
         db.commit()
     else:
-        cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.gear_id, character.id_))
+        cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, class_id = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.class_id, character.gear_id, character.id_))
         print("Updating old character")
         db.commit()
 
@@ -48,15 +60,17 @@ def get_from_db(name):
     cur = db.cursor()
     cur.execute("SELECT * FROM character WHERE name = ?", (name,))
     db_character = cur.fetchone()
-    character = Character(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4])
+    character = Character(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
     return character
 
-def create_character(name):
-    new_character = Character(None, name, 0, 0, None)
+def create_character(name, class_id):
+    new_character = Character(None, name, 0, 0, class_id, None)
+    print(str(vars(new_character)))
     try:
         save_to_db(new_character)
-        return "Saved character called " + new_character.name + " to database"
+        return "Saved character called " + new_character.name + " with class id " + str(new_character.class_id) + " to database"
     except:
+        traceback.print_exc()
         return "Something went wrong" 
 
 def level_up(name):
