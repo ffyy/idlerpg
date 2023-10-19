@@ -32,6 +32,8 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
+        channel = self.get_channel(CHANNEL.id)
+        await channel.send("I have awoken")
 
     @tasks.loop(seconds=5)
     async def spam_messages(self):
@@ -61,7 +63,8 @@ class DeleteView(discord.ui.View):
     @discord.ui.button(label="Delete the character", style=discord.ButtonStyle.primary, emoji="☠")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         response = charutils.delete_character(interaction.user.id)
-        await interaction.response.edit_message(content=(response), view=None)
+        await interaction.response.edit_message(content=("You can always start again by using /register"), view=None)
+        await interaction.channel.send(response)
 
     @discord.ui.button(label="Don't delete the character", style=discord.ButtonStyle.primary, emoji="😎")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -71,11 +74,11 @@ class DeleteView(discord.ui.View):
 async def delete(interaction: discord.Interaction, name: str):
     current_character = charutils.get_character_by_player_id(interaction.user.id)
     if (current_character is not None) and (current_character.name) == name:
-        await interaction.response.send_message("Confirm deleting the character.", view=DeleteView(name))
+        await interaction.response.send_message("Confirm deleting the character.", view=DeleteView(name), ephemeral=True)
     elif current_character is None:
-        await interaction.response.send_message("You don't have a character.\nUse /register to register a new character.")
+        await interaction.response.send_message("You don't have a character.\nUse /register to register a new character.", ephemeral=True)
     else:
-        await interaction.response.send_message("This is not your character, you can't delete it.")
+        await interaction.response.send_message("This is not your character, you can't delete it.", ephemeral=True)
 
 class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
@@ -91,16 +94,17 @@ class RegisterView(discord.ui.View):
         await interaction.response.defer()
         #print(str(interaction.user.id) + " chose a class")
         response = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
-        await interaction.followup.edit_message(interaction.message.id, content=(response), view=None)
+        await interaction.followup.edit_message(interaction.message.id, content=("Enjoy idling!"), view=None)
+        await interaction.channel.send(response)
 
 @client.tree.command(name="register", description="Create a new character")
 async def register(interaction: discord.Interaction, name: str):
     old_character = charutils.get_character_by_player_id(interaction.user.id)
     if old_character is not None:
         response = "You already have a level " + str(old_character.level) + " " + old_character.character_class.name + " called " + old_character.name + ".\nUse /delete [name] to delete your old character first."
-        await interaction.response.send_message(response)
+        await interaction.response.send_message(response, ephemeral=True)
     else:
-        await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name))
+        await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
 
 print("starting bot")
 client.run(TOKEN)

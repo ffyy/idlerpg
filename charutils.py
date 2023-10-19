@@ -146,4 +146,4 @@ def level_up(player_id):
         update_db_character(db_character)
         return "Character " + character.name + " is now level " + str(character.level)
     else:
-        return "You don't even have a character"
+        return "You don't even have a character.\nUse /register to register a new character."
