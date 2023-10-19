@@ -2,13 +2,19 @@ import random
 import charutils
 from rpgobjects import *
 
-def encounter_outcome(adventurer):
-    encounter_difficulty = 0
-    adventurer_roll = 5
-    if adventurer_roll >= encounter_difficulty:
-        return [1, adventurer_roll, encounter_difficulty]
+def overcome_encounter(adventurer: Character, encounter_difficulty):
+    if adventurer.character_class.tactic == "Random":
+        adventurer_roll = random.randint(1,100) + adventurer.gear.gearscore
+    elif adventurer.character_class.tactic == "Stable":
+        adventurer_roll = random.randint(1,20) + random.randint(1,20) + random.randint(1,20) + random.randint(1,20) + random.randint(1,20) + adventurer.gear.gearscore
     else:
-        return [0, adventurer_roll, encounter_difficulty]
+        adventurer_roll = 1
+    
+    if adventurer_roll >= encounter_difficulty:
+        charutils.level_up_by_id(adventurer.id_)
+        return [1, adventurer_roll]
+    else:
+        return [0, adventurer_roll]
 
 def run_adventure():
     adventurers = []
@@ -19,11 +25,28 @@ def run_adventure():
     for character_id in character_ids:
         adventurers.append(charutils.get_character_by_id(character_id[0]))
     
-    party = random.choices(adventurers, weights=None, k=len(adventurers)//2) 
+    if len(adventurers) == 1:
+        party = adventurers[0]
+    else:
+        party = random.sample(adventurers, k=len(adventurers)//2) 
     
-    outcomes = []
+    encounter_difficulty = random.randint(1,100)
+    
+    encounter_outcomes = []
     for adventurer in party:
-        adventurer_outcome = (adventurer.name, encounter_outcome(adventurer))
-        outcomes.append(adventurer_outcome)
+        adventurer_outcome = (adventurer.name, overcome_encounter(adventurer, encounter_difficulty))
+        encounter_outcomes.append(adventurer_outcome)
 
-    return outcomes
+    adventure_result = "An epic adventure was had! The Encounter difficulty was: " + str(encounter_difficulty) + "\nParticipants and outcomes:"
+    for outcome in encounter_outcomes:
+        adventure_result = '\n'.join([adventure_result, outcome[0]])
+        if outcome[1][0] == 1:
+            adventure_result = ' - '.join([adventure_result, "Success!"])
+            adventure_result = ' | '.join([adventure_result, "Roll: "])
+            adventure_result = ''.join([adventure_result, str(outcome[1][1])])
+        elif outcome[1][0] == 0:
+            adventure_result = ' - '.join([adventure_result, "Failure! "])
+            adventure_result = ' | '.join([adventure_result, "Roll: "])
+            adventure_result = ''.join([adventure_result, str(outcome[1][1])])
+
+    return adventure_result

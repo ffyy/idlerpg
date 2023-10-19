@@ -12,11 +12,11 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID") 
 CHANNEL_ID = os.getenv("CHANNEL_ID")
+TIMESCALE = int(os.getenv("TIMESCALE"))
 
 if not os.path.exists(".conf"):
     initialsetup.do()
     
-#lets turn guild and channel into objects we can use
 GUILD = discord.Object(id=int(GUILD_ID))
 CHANNEL = discord.Object(id=int(CHANNEL_ID))
 
@@ -28,7 +28,7 @@ class RpgEngine(discord.Client):
 
     async def setup_hook(self) -> None:
         self.tree.copy_global_to(guild=GUILD)
-        self.run_adventures.start()
+        #self.run_adventures.start()
 
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
@@ -36,7 +36,7 @@ class RpgEngine(discord.Client):
         channel = self.get_channel(CHANNEL.id)
         #await channel.send("I have awoken")
 
-    @tasks.loop(seconds=5)
+    @tasks.loop(seconds=600)
     async def run_adventures(self):
         channel = self.get_channel(CHANNEL.id)
         await channel.send(dungeonmaster.run_adventure())
@@ -55,6 +55,10 @@ client = RpgEngine(intents=intents)
 @client.tree.command(name="levelup",description="Level up your character") #testing command
 async def levelup(interaction: discord.Interaction):
     await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
+
+@client.tree.command(name="adventure",description="Run an adventure") #testing command
+async def adventure(interaction: discord.Interaction):
+    await interaction.response.send_message(dungeonmaster.run_adventure())
 
 class DeleteView(discord.ui.View):
     def __init__(self, name):
@@ -79,7 +83,7 @@ async def delete(interaction: discord.Interaction, name: str):
     elif current_character is None:
         await interaction.response.send_message("You don't have a character.\nUse /register to register a new character.", ephemeral=True)
     else:
-        await interaction.response.send_message("This is not your character, you can't delete it.", ephemeral=True)
+        await interaction.response.send_message("This is not your character, you can't delete it. Your character is called" + current_character.name, ephemeral=True)
 
 class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
