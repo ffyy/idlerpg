@@ -129,6 +129,17 @@ def db_character_to_character(character: CharacterDB) -> Character:
     game_character = Character(character.id_, character.name, character.level, character.current_xp, game_class, game_gear)
     return game_character
 
+def is_name_valid(name) -> str:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
+    count = int(cur.fetchone()[0])
+    print(str(count))
+    if count > 0 or len(name) > 12 or not name.isalpha():
+        return False
+    else:
+        return True
+
 #GAME OCCURRENCES
 '''
 def level_up(name):
@@ -138,7 +149,7 @@ def level_up(name):
     return "Character " + character.name + " is now level " + str(character.level)
 '''
 
-def level_up(player_id):
+def level_me_up(player_id):
     character = get_character_by_player_id(player_id)
     if character is not None:
         character.level += 1

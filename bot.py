@@ -53,7 +53,7 @@ client = RpgEngine(intents=intents)
 
 @client.tree.command(name="levelup",description="Level up your character") #testing command
 async def levelup(interaction: discord.Interaction):
-    await interaction.response.send_message(charutils.level_up(interaction.user.id))
+    await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
 
 class DeleteView(discord.ui.View):
     def __init__(self, name):
@@ -104,7 +104,19 @@ async def register(interaction: discord.Interaction, name: str):
         response = "You already have a level " + str(old_character.level) + " " + old_character.character_class.name + " called " + old_character.name + ".\nUse /delete [name] to delete your old character first."
         await interaction.response.send_message(response, ephemeral=True)
     else:
-        await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
+        if (charutils.is_name_valid(name)):
+            await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
+        else:
+            await interaction.response.send_message("The name [" + name + "] is not valid", ephemeral=True)
+
+@client.tree.command(name="find", description="Find my character")
+async def find(interaction: discord.Interaction):
+    character = charutils.get_character_by_player_id(interaction.user.id)
+    if character is not None:
+        response = "You have a level " + str(character.level) + " " + character.character_class.name + " called " + character.name + "."
+        await interaction.response.send_message(response, ephemeral=True)
+    else:
+        await interaction.response.send_message("You don't have a character yet.\nUse /register to start.", ephemeral=True)
 
 print("starting bot")
 client.run(TOKEN)
