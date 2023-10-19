@@ -90,8 +90,9 @@ async def delete(interaction: discord.Interaction, name: str):
 
 class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
-        discord.SelectOption(label="Rogue", value="1", description="Rogues need to be lucky to get ahead (uses 1d100)"),
-        discord.SelectOption(label="Fighter", value="2", description="Fighters are solid in any situation (uses 5d20)")
+        discord.SelectOption(label="Rogue", value="1", description="Rogues need to be lucky to get ahead (1d100)"),
+        discord.SelectOption(label="Fighter", value="2", description="Fighters are solid in any situation (5d20)"),
+        discord.SelectOption(label="Hobbit", value="3", description="Hobbits are overall bad, but start with a magic ring (4d10 + 25)")
 ]
     def __init__(self, name):
         super().__init__(timeout=100)
