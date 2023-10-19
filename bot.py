@@ -1,7 +1,8 @@
 import os
 import discord
-import charutils
 import initialsetup
+import charutils
+import dungeonmaster
 from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
@@ -27,25 +28,25 @@ class RpgEngine(discord.Client):
 
     async def setup_hook(self) -> None:
         self.tree.copy_global_to(guild=GUILD)
-        self.spam_messages.start()
+        self.run_adventures.start()
 
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
         channel = self.get_channel(CHANNEL.id)
-        await channel.send("I have awoken")
+        #await channel.send("I have awoken")
 
     @tasks.loop(seconds=5)
-    async def spam_messages(self):
+    async def run_adventures(self):
         channel = self.get_channel(CHANNEL.id)
-        #print(CHANNEL_ID)
-        #print(channel)
+        await channel.send(dungeonmaster.run_adventure())
         #await channel.send(self.counter)
         #self.counter += 1
 
-    @spam_messages.before_loop
-    async def before_spamming(self):
+    @run_adventures.before_loop
+    async def before_adventuring(self):
         await self.wait_until_ready()        
+        
 
 intents = discord.Intents.default()
 intents.members = True

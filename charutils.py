@@ -81,6 +81,19 @@ def get_character_by_name(name) -> Character:
         character = db_character_to_character(data_character)
         return character
 
+def get_character_by_id(id_) -> Character:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM character WHERE id_ = ?", (id_,))
+    db_character = cur.fetchone()
+    cur.close()
+    if db_character is None:
+        return None
+    else:    
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
+        character = db_character_to_character(data_character)
+        return character
+
 def get_character_by_player_id(player_id) -> Character:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -97,6 +110,13 @@ def get_character_by_player_id(player_id) -> Character:
         return character
     else:
         return None
+
+def get_character_ids() -> tuple:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT id_ from CHARACTER")
+    characters = cur.fetchall()
+    return characters
 
 def get_class(id) -> CharacterClass:
     db = sqlite3.connect(DB_PATH)
@@ -141,13 +161,12 @@ def is_name_valid(name) -> str:
         return True
 
 #GAME OCCURRENCES
-'''
-def level_up(name):
-    character = get_character_by_name(name)
+
+def level_up_by_id(character_id):
+    character = get_character_by_id(character_id)
     character.level += 1
     update_db_character(character_to_db_character(character))
-    return "Character " + character.name + " is now level " + str(character.level)
-'''
+    return "Character " + character.name + " leveled up by going on an adventure and is now level " + str(character.level)
 
 def level_me_up(player_id):
     character = get_character_by_player_id(player_id)
