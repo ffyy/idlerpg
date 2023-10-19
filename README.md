@@ -1,14 +1,14 @@
 # idlerpg
 now:
 - create character, 2 classes (random & stable)
-- level up character
+- level up character by adventuring
 - pve and pvp
-
-soon:
-- gear
-- different challenge types
-- subclasses (better at some challenge type)
+- gear & level up gearscore by adventuring
 
 future:
-- character body parts as objects (unequip gear, pvp overhaul with location based damage)
-- ???
+- AI generated quest text & outcomes
+- different challenge types
+- more classes
+- subclasses (better at some challenge type)
+- world map 
+- adventure party, pvp encounters & encounter choice depends on position on world map
