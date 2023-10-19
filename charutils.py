@@ -24,7 +24,10 @@ def register_character(name, class_id, player_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     try:
-        cur.execute("INSERT INTO gear(gearscore) VALUES (0)")
+        if character.class_id == 3: #hobbits get a magic ring
+            cur.execute("INSERT INTO gear(gearscore) VALUES (20)")
+        else: 
+            cur.execute("INSERT INTO gear(gearscore) VALUES (0)")
         character.gear_id = cur.lastrowid
         cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
