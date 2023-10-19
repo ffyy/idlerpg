@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 DB_PATH = os.getenv("DB_PATH")
 
+#DB FUNCTIONS
+
 def update_db_character(character: CharacterDB):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -17,11 +19,13 @@ def update_db_character(character: CharacterDB):
 
 def register_character(name, class_id, player_id):
     character = CharacterDB(None, name, 0, 0, class_id, None)
-    class_name = get_db_class(class_id).name
+    class_name = get_class(class_id).name
     
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     try:
+        cur.execute("INSERT INTO gear(gearscore) VALUES (0)")
+        character.gear_id = cur.lastrowid
         cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
@@ -35,9 +39,14 @@ def register_character(name, class_id, player_id):
 def delete_character(player_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("DELETE FROM character WHERE player_id = ?",(player_id))
+    character = get_character_by_player_id(player_id)
+    cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
+    cur.execute("DELETE FROM gear WHERE id_ = ?", (character.gear.id_,))
+    cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
     db.commit()
     cur.close()
+    response = "Deleted character " + character.name
+    return response
 
 def register_player(player_id, character_id):
     db = sqlite3.connect(DB_PATH)
@@ -59,16 +68,37 @@ def unregister_player(player_id):
         traceback.print_exc()
         return "Something went wrong."    
 
-def get_db_character_by_name(name):
+def get_character_by_name(name) -> Character:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("SELECT * FROM character WHERE name = ?", (name,))
     db_character = cur.fetchone()
     cur.close()
-    character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
-    return character
+    if db_character is None:
+        return None
+    else:    
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
+        character = db_character_to_character(data_character)
+        return character
 
-def get_db_class(id):
+def get_character_by_player_id(player_id) -> Character:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    db_character = None
+    cur.execute("SELECT character_id FROM player WHERE discord_id = ?", (player_id,))
+    character_id = cur.fetchone()
+    if character_id is not None:
+        cur.execute("SELECT * FROM character WHERE id_ = ?", (character_id))
+        db_character = cur.fetchone()
+    cur.close()
+    if db_character is not None:
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
+        character = db_character_to_character(data_character)
+        return character
+    else:
+        return None
+
+def get_class(id) -> CharacterClass:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("SELECT * FROM class WHERE id_ = ?", (id,))
@@ -77,18 +107,43 @@ def get_db_class(id):
     character_class = CharacterClass(db_class[0], db_class[1], db_class[2])
     return character_class
 
-def character_to_db_object(character: Character):
-    db_character = CharacterDB(character.id_, character.name, character.level, character.current_xp, character.character_class.id, character.gear.id_)
+def get_gear(id) -> Gear:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM gear WHERE id_ = ?", (id,))
+    db_gear = cur.fetchone()
+    cur.close()
+    if db_gear is not None: 
+        gear = Gear(db_gear[0], db_gear[1])
+        return gear
+    else:
+        return None
+
+def character_to_db_character(character: Character) -> CharacterDB:
+    db_character = CharacterDB(character.id_, character.name, character.level, character.current_xp, character.character_class.id_, character.gear.id_)
     return db_character
 
-def character_to_db_object(character: CharacterDB):
-    #game_class =
-    #game_gear =
-    game_character = Character(character.id_, character.name, character.level, character.current_xp)
+def db_character_to_character(character: CharacterDB) -> Character:
+    game_class = get_class(character.class_id)
+    game_gear = get_gear(character.gear_id)
+    game_character = Character(character.id_, character.name, character.level, character.current_xp, game_class, game_gear)
     return game_character
 
+#GAME OCCURRENCES
+'''
 def level_up(name):
-    character = get_db_character_by_name(name)
+    character = get_character_by_name(name)
     character.level += 1
-    update_db_character(character)
+    update_db_character(character_to_db_character(character))
     return "Character " + character.name + " is now level " + str(character.level)
+'''
+
+def level_up(player_id):
+    character = get_character_by_player_id(player_id)
+    if character is not None:
+        character.level += 1
+        db_character = character_to_db_character(character)
+        update_db_character(db_character)
+        return "Character " + character.name + " is now level " + str(character.level)
+    else:
+        return "You don't even have a character"

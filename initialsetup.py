@@ -18,10 +18,10 @@ def do():
     character_classes = [(1, "Rogue", "Random"),
                          (2, "Fighter", "Stable")]
     cur = db.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY, name varchar(20) UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
-    cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name varchar(20) UNIQUE NOT NULL, tactic varchar(20) NOT NULL)")    
-    cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER PRIMARY KEY, gearscore INTEGER NOT NULL)")
-    cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER PRIMARY KEY, discord_id INTEGER UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
+    cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY, name VARCHAR(20) UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name VARCHAR(20) UNIQUE NOT NULL, tactic varchar(20) NOT NULL)")    
+    cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER NOT NULL)")
+    cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id VARCHAR(100) UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
     cur.executemany("INSERT INTO class VALUES (?, ?, ?)", character_classes)
     db.commit()
 
