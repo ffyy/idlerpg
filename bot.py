@@ -13,7 +13,6 @@ GUILD_ID = os.getenv("GUILD_ID")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 if not os.path.exists(".conf"):
-    print("Doing initial setup")
     initialsetup.do()
     
 #lets turn guild and channel into objects we can use
@@ -71,7 +70,8 @@ class ClassView(discord.ui.View):
     @discord.ui.select(placeholder="Select a class", options=CHARACTER_CLASSES, max_values=1)
     async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction.response.defer()
-        response_message = charutils.create_character(self.name, int(select.values[0]))
+        #print(str(interaction.user.id) + " chose a class")
+        response_message = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
         await interaction.followup.edit_message(interaction.message.id, content=(response_message), view=None)
 
 @client.tree.command(name="test", description="Create a new character")

@@ -4,7 +4,7 @@ import time
 from dotenv import load_dotenv
 
 def do():
-    print("in 5 seconds, i will run initial setup again")
+    print("in 5 seconds, i will run initial setup again!\nto stop this from happening, add .conf to root dir")
     time.sleep(5)
     print("doing initial setup\n--------")    
     
