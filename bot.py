@@ -60,6 +60,9 @@ async def levelup(interaction: discord.Interaction):
 async def adventure(interaction: discord.Interaction):
     await interaction.response.send_message(dungeonmaster.run_adventure())
 
+@client.tree.command(name="top10",description="Get top10 characters") #testing command
+async def top10(interaction: discord.Interaction):
+    await interaction.response.send_message(charutils.get_top10())
 class DeleteView(discord.ui.View):
     def __init__(self, name):
         super().__init__(timeout=100)

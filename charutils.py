@@ -160,6 +160,12 @@ def is_name_valid(name) -> str:
     else:
         return True
 
+def get_top10() -> str:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT name, level FROM character ORDER BY level DESC LIMIT 10")
+    return(str(cur.fetchall()))
+
 #GAME OCCURRENCES
 
 def level_up_by_id(character_id):
