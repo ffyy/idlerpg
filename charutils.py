@@ -124,7 +124,7 @@ def get_class(id) -> CharacterClass:
     cur.execute("SELECT * FROM class WHERE id_ = ?", (id,))
     db_class = cur.fetchone()
     cur.close()
-    character_class = CharacterClass(db_class[0], db_class[1], db_class[2])
+    character_class = CharacterClass(db_class[0], db_class[1], db_class[2], db_class[3], db_class[4])
     return character_class
 
 def get_gear(id) -> Gear:

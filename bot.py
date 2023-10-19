@@ -6,7 +6,6 @@ import dungeonmaster
 from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
-from discord.ext import commands
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -63,6 +62,7 @@ async def adventure(interaction: discord.Interaction):
 @client.tree.command(name="top10",description="Get top10 characters") #testing command
 async def top10(interaction: discord.Interaction):
     await interaction.response.send_message(charutils.get_top10())
+
 class DeleteView(discord.ui.View):
     def __init__(self, name):
         super().__init__(timeout=100)
@@ -90,8 +90,8 @@ async def delete(interaction: discord.Interaction, name: str):
 
 class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
-        discord.SelectOption(label="Rogue", value="1", description="Rogues need to be lucky to get ahead"),
-        discord.SelectOption(label="Fighter", value="2", description="Fighters are solid in any situation")
+        discord.SelectOption(label="Rogue", value="1", description="Rogues need to be lucky to get ahead (uses 1d100)"),
+        discord.SelectOption(label="Fighter", value="2", description="Fighters are solid in any situation (uses 5d20)")
 ]
     def __init__(self, name):
         super().__init__(timeout=100)

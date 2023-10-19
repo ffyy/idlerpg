@@ -3,12 +3,7 @@ import charutils
 from rpgobjects import *
 
 def overcome_encounter(adventurer: Character, encounter_difficulty):
-    if adventurer.character_class.tactic == "Random":
-        adventurer_roll = random.randint(1,100) + adventurer.gear.gearscore
-    elif adventurer.character_class.tactic == "Stable":
-        adventurer_roll = random.randint(1,20) + random.randint(1,20) + random.randint(1,20) + random.randint(1,20) + random.randint(1,20) + adventurer.gear.gearscore
-    else:
-        adventurer_roll = 1
+    adventurer_roll = adventurer.roll_dice() + adventurer.gear.gearscore
     
     if adventurer_roll >= encounter_difficulty:
         charutils.level_up_by_id(adventurer.id_)

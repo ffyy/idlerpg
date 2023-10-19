@@ -1,3 +1,5 @@
+from random import randint
+
 class Gear:
     def __init__(
             self,
@@ -12,11 +14,15 @@ class CharacterClass:
             self,
             id_,
             name,
-            tactic
+            dice,
+            die_size,
+            bonus
     ):
         self.id_ = id_
         self.name = name
-        self.tactic = tactic
+        self.dice = dice
+        self.die_size = die_size
+        self.bonus = bonus
 
 class CharacterDB:
     def __init__(
@@ -51,6 +57,13 @@ class Character:
         self.current_xp = current_xp
         self.character_class = character_class
         self.gear = gear
+
+    def roll_dice(self):
+        result = self.character_class.bonus
+        for die in range(self.character_class.dice):
+            this_roll = randint(1, self.character_class.die_size)
+            result += this_roll
+        return result
 
 class Player:
     def __init__(
