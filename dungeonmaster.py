@@ -14,9 +14,9 @@ def overcome_encounter(party: list[Character], encounter_difficulty):
     if party_roll >= encounter_difficulty:
         for adventurer in party:
             charutils.level_up_by_id(adventurer.id_)
-        return [1, encounter_results]
+        return [1, str(party_roll), encounter_results]
     else:
-        return [0, encounter_results]
+        return [0, str(party_roll), encounter_results]
 
 def run_adventure():
     adventurers = []
@@ -39,8 +39,10 @@ def run_adventure():
     adventure_result = "An epic adventure was had! The Encounter difficulty was: " + str(encounter_difficulty) + "\nOutcome: "
     if encounter_outcome[0] == 1: adventure_result = ''.join([adventure_result,"Success!"])
     elif encounter_outcome[0] == 0: adventure_result = ''.join([adventure_result,"Failure!"])
+    adventure_result = ' '.join([adventure_result, "Party total roll was:"])
+    adventure_result = ' '.join([adventure_result, encounter_outcome[1]])
     adventure_result = ''.join([adventure_result,"\nParticipants and rolls:"])
-    for participant in encounter_outcome[1]:
+    for participant in encounter_outcome[2]:
         adventure_result = '\n'.join([adventure_result, participant[0]])
         adventure_result = ' - '.join([adventure_result, participant[1]])
 
