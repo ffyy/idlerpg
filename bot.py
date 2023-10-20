@@ -86,7 +86,7 @@ async def delete(interaction: discord.Interaction, name: str):
     elif current_character is None:
         await interaction.response.send_message("You don't have a character.\nUse /register to register a new character.", ephemeral=True)
     else:
-        await interaction.response.send_message("This is not your character, you can't delete it. Your character is called" + current_character.name, ephemeral=True)
+        await interaction.response.send_message("This is not your character, you can't delete it. Your character is called " + current_character.name, ephemeral=True)
 
 class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
@@ -116,7 +116,7 @@ async def register(interaction: discord.Interaction, name: str):
         if (charutils.is_name_valid(name)):
             await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
         else:
-            await interaction.response.send_message("The name [" + name + "] is not valid", ephemeral=True)
+            await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 20 characters, must be unique and must include only letters.", ephemeral=True)
 
 @client.tree.command(name="find", description="Find my character")
 async def find(interaction: discord.Interaction):
