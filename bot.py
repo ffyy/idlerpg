@@ -12,6 +12,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID") 
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 TIMESCALE = int(os.getenv("TIMESCALE"))
+DEBUG_MODE = os.getenv("DEBUG_MODE")
 
 if not os.path.exists(".conf"):
     initialsetup.do()
@@ -39,8 +40,6 @@ class RpgEngine(discord.Client):
     async def run_adventures(self):
         channel = self.get_channel(CHANNEL.id)
         await channel.send(dungeonmaster.run_adventure())
-        #await channel.send(self.counter)
-        #self.counter += 1
 
     @run_adventures.before_loop
     async def before_adventuring(self):
@@ -51,15 +50,16 @@ intents = discord.Intents.default()
 intents.members = True
 client = RpgEngine(intents=intents)
 
-@client.tree.command(name="levelup",description="Level up your character") #testing command
-async def levelup(interaction: discord.Interaction):
-    await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
+if DEBUG_MODE == "1":
+    @client.tree.command(name="levelup",description="Level up your character") #testing command
+    async def levelup(interaction: discord.Interaction):
+        await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
 
-@client.tree.command(name="adventure",description="Run an adventure") #testing command
-async def adventure(interaction: discord.Interaction):
-    await interaction.response.send_message(dungeonmaster.run_adventure())
+    @client.tree.command(name="adventure",description="Run an adventure") #testing command
+    async def adventure(interaction: discord.Interaction):
+        await interaction.response.send_message(dungeonmaster.run_adventure())
 
-@client.tree.command(name="top10",description="Get top10 characters") #testing command
+@client.tree.command(name="top10",description="Get top10 characters") #make it prettier
 async def top10(interaction: discord.Interaction):
     await interaction.response.send_message(charutils.get_top10())
 
