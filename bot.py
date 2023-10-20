@@ -71,16 +71,6 @@ if DEBUG_MODE == "1":
         quest_embed.add_field(name="Rolls", value=adventurer_rolls_string, inline=True)        
         await interaction.channel.send(embed=quest_embed)
 
-    @client.tree.command(name="testembed")
-    async def testembed(interaction: discord.Interaction, name: str):
-        embed_with_name = discord.Embed(title=name, type="rich", description="this is the description")
-        value_field1="tuut\ntuut"
-        embed_with_name.add_field(name="field 1", value=(value_field1), inline=True)
-        embed_with_name.add_field(name="field 2", value=(name*2, "\u200Bsecond element", "\u200Bthird element"), inline=True)
-        embed_with_name.add_field(name="inline field", value=(name, name, name, name*3), inline=True)
-        await interaction.response.send_message("Sending embed", ephemeral=True)
-        await interaction.channel.send(embed=embed_with_name)
-
     @client.tree.command(name="rest",description="Take a long rest") #testing command
     async def rest(interaction: discord.Interaction):
         await interaction.response.send_message("Leveling up characters & gear")
