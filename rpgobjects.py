@@ -83,10 +83,12 @@ class Quest:
             party: list[Character],
             party_rolls: list[int],
             quest_difficulty,
+            quest_journal,
             outcome):
         self.quest_type = quest_type
         self.party = party
         self.party_rolls = party_rolls
         self.quest_difficulty = quest_difficulty
+        self.quest_journal = quest_journal
         self.outcome = outcome
         

@@ -57,7 +57,29 @@ if DEBUG_MODE == "1":
 
     @client.tree.command(name="adventure",description="Run an adventure") #testing command
     async def adventure(interaction: discord.Interaction):
-        await interaction.response.send_message(dungeonmaster.run_adventure())
+        await interaction.response.send_message("Running a quest")
+        quest = dungeonmaster.run_adventure()
+        quest_embed = discord.Embed(title="An epic adventure was had!", type="rich", description=quest.quest_journal)
+        party_members_string = ""
+        adventurer_rolls_string = ""
+        for i, adventurer in enumerate(quest.party):
+            party_members_string = ''.join([party_members_string, adventurer.name])
+            party_members_string = ''.join([party_members_string, "\n"])
+            adventurer_rolls_string = ''.join([adventurer_rolls_string, str(quest.party_rolls[i])])
+            adventurer_rolls_string = ''.join([adventurer_rolls_string, "\n"])
+        quest_embed.add_field(name="Heroes", value=party_members_string, inline=True)
+        quest_embed.add_field(name="Rolls", value=adventurer_rolls_string, inline=True)        
+        await interaction.channel.send(embed=quest_embed)
+
+    @client.tree.command(name="testembed")
+    async def testembed(interaction: discord.Interaction, name: str):
+        embed_with_name = discord.Embed(title=name, type="rich", description="this is the description")
+        value_field1="tuut\ntuut"
+        embed_with_name.add_field(name="field 1", value=(value_field1), inline=True)
+        embed_with_name.add_field(name="field 2", value=(name*2, "\u200Bsecond element", "\u200Bthird element"), inline=True)
+        embed_with_name.add_field(name="inline field", value=(name, name, name, name*3), inline=True)
+        await interaction.response.send_message("Sending embed", ephemeral=True)
+        await interaction.channel.send(embed=embed_with_name)
 
 @client.tree.command(name="top10",description="Get top10 characters") #make it prettier
 async def top10(interaction: discord.Interaction):
