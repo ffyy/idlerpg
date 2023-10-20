@@ -18,7 +18,6 @@ def give_rewards(quest: Quest):
 
 def run_quest(dm_quest: Quest) -> Quest:
     completed_quest = dm_quest
-    #print("starting to handle quest: " + str(vars(dm_quest)))
     for adventurer in dm_quest.party:
         adventurer_roll = adventurer.roll_dice() + adventurer.gear.gearscore
         print(adventurer.name + " rolled a " + str(adventurer_roll))
@@ -33,12 +32,12 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Success!**"])
         give_rewards(completed_quest)
     else:
+        completed_quest.outcome = 0
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Unfortunately,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])  
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Failure!**"])
-        completed_quest.outcome = 0
 
     return completed_quest
 
