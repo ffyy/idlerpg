@@ -18,6 +18,8 @@ def do():
     character_classes = [(1, "Thief", 1, 100, 0),
                          (2, "Fighter", 5, 20, 0),
                          (3, "Hobbit", 4, 10, 0)]
+    
+    print("creating new tables")
     cur = db.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY, name VARCHAR(20) UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
     cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name VARCHAR(20) UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL)")    
@@ -38,7 +40,6 @@ def delete_all_tables(connection):
         print("dropping table " + table)
         sql = "DROP TABLE IF EXISTS " + table
         cur.execute(sql)
-    print("creating new tables")
     cur.close()
 
 def create_config():
