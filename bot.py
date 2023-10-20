@@ -85,7 +85,7 @@ if DEBUG_MODE == "1":
     async def rest(interaction: discord.Interaction):
         await interaction.response.send_message("Leveling up characters & gear")
         day_report = dungeonmaster.run_long_rest()
-        day_embed = discord.Embed(title="The adventurers took a long rest to level up and attune new magic items.", type="rich", description="The results of the adventuring day are as follows:")
+        day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During they rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
         characters_string = ""
         levels_string = ""
         gearscore_string = ""
