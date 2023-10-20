@@ -2,6 +2,8 @@ import random
 import charutils
 from rpgobjects import *
 
+def give_rewards(quest: Quest)
+
 def run_quest(dm_quest: Quest) -> Quest:
     completed_quest = dm_quest
     #print("starting to handle quest: " + str(vars(dm_quest)))

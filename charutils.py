@@ -17,6 +17,13 @@ def update_db_character(character: CharacterDB):
     db.commit()
     cur.close()
 
+def update_db_gear(gear: Gear):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("UPDATE gear SET gearscore = ?", gear.gearscore)
+    db.commit()
+    cur.close
+
 def register_character(name, class_id, player_id):
     character = CharacterDB(None, name, 0, 0, class_id, None)
     class_name = get_class(class_id).name
