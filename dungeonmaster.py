@@ -65,3 +65,29 @@ def run_adventure():
 
     completed_quest = run_quest(quest)
     return completed_quest
+
+def run_long_rest():
+    character_ids = charutils.get_character_ids()
+
+    old_characters = []
+    rested_characters = []
+    day_report = []
+    for character_id in character_ids:
+        old_characters.append(charutils.get_character_by_id(character_id[0]))
+
+    for old_character in old_characters:
+        rested_characters.append(old_character.take_long_rest())
+
+    old_characters.sort(key=lambda character: character.id_)
+    rested_characters.sort(key=lambda character: character.id_)
+
+    for i, rested_character in enumerate(rested_characters):
+        if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore:
+            personal_report = DayReport(rested_character.name, rested_character.level, rested_character.gear.gearscore)
+            if rested_character.level != old_characters[i].level:
+                personal_report.level_result = str(old_characters[i].level) + "->" + str(rested_character.level)
+            if rested_character.gear.gearscore != old_characters[i].gear.gearscore:
+                personal_report.level_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
+            day_report.append(personal_report)
+
+    return day_report

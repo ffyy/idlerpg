@@ -64,6 +64,13 @@ class Character:
             this_roll = randint(1, self.character_class.die_size)
             result += this_roll
         return result
+    
+    def take_long_rest(self):
+        rested_character = Character(self.id_, self.name, self.level, self.current_xp, self.character_class, self.gear)
+        while rested_character.current_xp >= 10000:
+            rested_character.level += 1
+            rested_character.current_xp = max(rested_character.current_xp - 10000, 0)
+        return rested_character
 
 class Player:
     def __init__(
@@ -91,4 +98,14 @@ class Quest:
         self.quest_difficulty = quest_difficulty
         self.quest_journal = quest_journal
         self.outcome = outcome
-        
+
+class DayReport:
+    def __init__(
+            self,
+            character_name,
+            level_result,
+            gearscore_result
+    ):
+        self.character_name = character_name
+        self.level_result = level_result
+        self.gearscore_result = gearscore_result

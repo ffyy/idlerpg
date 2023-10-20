@@ -81,6 +81,26 @@ if DEBUG_MODE == "1":
         await interaction.response.send_message("Sending embed", ephemeral=True)
         await interaction.channel.send(embed=embed_with_name)
 
+    @client.tree.command(name="rest",description="Take a long rest") #testing command
+    async def rest(interaction: discord.Interaction):
+        await interaction.response.send_message("Leveling up characters & gear")
+        day_report = dungeonmaster.run_long_rest()
+        day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="The results of the adventuring day are as follows:")
+        characters_string = ""
+        levels_string = ""
+        gearscore_string = ""
+        for character in day_report:
+            characters_string = ''.join([characters_string, character.character_name])
+            characters_string = ''.join([characters_string, "\n"])
+            levels_string = ''.join([levels_string, str(character.level_result)])
+            levels_string = ''.join([levels_string, "\n"])
+            gearscore_string = ''.join([gearscore_string, str(character.gearscore_result)])
+            gearscore_string = ''.join([gearscore_string, "\n"])
+        day_embed.add_field(name="Characters", value=characters_string, inline=True)
+        day_embed.add_field(name="Level", value=levels_string, inline=True)        
+        day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
+        await interaction.channel.send(embed=day_embed)
+
 @client.tree.command(name="top10",description="Get top10 characters") #make it prettier
 async def top10(interaction: discord.Interaction):
     await interaction.response.send_message(charutils.get_top10())
