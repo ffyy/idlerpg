@@ -20,7 +20,7 @@ def update_db_character(character: CharacterDB):
 def update_db_gear(gear: Gear):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("UPDATE gear SET gearscore = ?", gear.gearscore)
+    cur.execute("UPDATE gear SET gearscore = ?, unattuned = ?", (gear.gearscore, gear.unattuned))
     db.commit()
     cur.close
 
@@ -32,9 +32,9 @@ def register_character(name, class_id, player_id):
     cur = db.cursor()
     try:
         if character.class_id == 3: #hobbits get a magic ring
-            cur.execute("INSERT INTO gear(gearscore) VALUES (20)")
+            cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (20,0)")
         else: 
-            cur.execute("INSERT INTO gear(gearscore) VALUES (0)")
+            cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (0,0)")
         character.gear_id = cur.lastrowid
         cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
@@ -144,7 +144,7 @@ def get_gear(id) -> Gear:
     db_gear = cur.fetchone()
     cur.close()
     if db_gear is not None: 
-        gear = Gear(db_gear[0], db_gear[1])
+        gear = Gear(db_gear[0], db_gear[1], db_gear[2])
         return gear
     else:
         return None
@@ -165,7 +165,7 @@ def is_name_valid(name) -> str:
     cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
     count = int(cur.fetchone()[0])
     print(str(count))
-    if count > 0 or len(name) > 12 or not name.isalpha():
+    if count > 0 or len(name) > 20 or not name.isalpha():
         return False
     else:
         return True

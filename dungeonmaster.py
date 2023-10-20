@@ -13,20 +13,23 @@ def give_rewards(quest: Quest):
             charutils.update_db_character(charutils.character_to_db_character(adventurer))
     elif quest.quest_type == "Loot":
         for adventurer in quest.party:
-            adventurer.gear.gearscore += 1
+            adventurer.gear.unattuned += 1
             charutils.update_db_gear(adventurer.gear)
 
 def run_quest(dm_quest: Quest) -> Quest:
     completed_quest = dm_quest
     for adventurer in dm_quest.party:
         adventurer_roll = adventurer.roll_dice() + adventurer.gear.gearscore
-        print(adventurer.name + " rolled a " + str(adventurer_roll))
         completed_quest.party_rolls.append(adventurer_roll)
 
     if sum(completed_quest.party_rolls) > dm_quest.quest_difficulty:
         completed_quest.outcome = 1
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Luckily,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
+        if dm_quest.quest_type == "Experience":
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "This was a very valuable experience for everyone."])
+        elif dm_quest.quest_type == "Loot":
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Everyone found a magic item."])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])        
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Success!**"])
@@ -45,7 +48,7 @@ def run_adventure():
     character_ids = charutils.get_character_ids()
     
     QUEST_TYPES = ["Experience", "Loot"]
-    quest_type = QUEST_TYPES[0] #do random in future
+    quest_type = random.choice(QUEST_TYPES)
 
     quest_hook = ' '.join(["The heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 
@@ -55,7 +58,7 @@ def run_adventure():
         return "I tried to run an adventure but there were no characters around" 
     
     if(len(character_ids)) == 1:
-        quest.party.append(charutils.get_character_by_id(character_ids[0]))
+        quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
     else:
         for character_id in random.sample(character_ids, k=len(character_ids)//2):
             quest.party.append(charutils.get_character_by_id(character_id[0]))   
@@ -76,6 +79,7 @@ def run_long_rest():
         old_characters.append(charutils.get_character_by_id(character_id[0]))
 
     for old_character in old_characters:
+        print(old_character.gear.gearscore)
         rested_characters.append(old_character.take_long_rest())
 
     old_characters.sort(key=lambda character: character.id_)
@@ -87,7 +91,7 @@ def run_long_rest():
             if rested_character.level != old_characters[i].level:
                 personal_report.level_result = str(old_characters[i].level) + "->" + str(rested_character.level)
             if rested_character.gear.gearscore != old_characters[i].gear.gearscore:
-                personal_report.level_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
+                personal_report.gearscore_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
             day_report.append(personal_report)
 
     return day_report

@@ -4,10 +4,12 @@ class Gear:
     def __init__(
             self,
             id_,
-            gearscore
+            gearscore,
+            unattuned
             ):
         self.id_ = id_
         self.gearscore = gearscore
+        self.unattuned = unattuned
 
 class CharacterClass:
     def __init__(
@@ -70,6 +72,9 @@ class Character:
         while rested_character.current_xp >= 10000:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - 10000, 0)
+        rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
+        rested_character.gear.gearscore += self.gear.unattuned
+        rested_character.gear.unattuned = 0
         return rested_character
 
 class Player:
