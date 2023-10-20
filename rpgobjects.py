@@ -75,3 +75,18 @@ class Player:
         self.id_ = id_
         self.discord_id = discord_id
         self.character.id = character_id
+
+class Quest:
+    def __init__(
+            self,
+            quest_type,
+            party: list[Character],
+            party_rolls: list[int],
+            quest_difficulty,
+            outcome):
+        self.quest_type = quest_type
+        self.party = party
+        self.party_rolls = party_rolls
+        self.quest_difficulty = quest_difficulty
+        self.outcome = outcome
+        
