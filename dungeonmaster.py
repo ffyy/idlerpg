@@ -2,7 +2,15 @@ import random
 import charutils
 from rpgobjects import *
 
-def give_rewards(quest: Quest)
+def give_rewards(quest: Quest):
+    if quest.quest_type == "Experience":
+        for adventurer in quest.party:
+            adventurer.current_xp += 5000
+            charutils.update_db_character(charutils.character_to_db_character(adventurer))
+    elif quest.quest_type == "Loot":
+        for adventurer in quest.party:
+            adventurer.gear.gearscore += 1
+            charutils.update_db_gear(adventurer.gear)
 
 def run_quest(dm_quest: Quest) -> Quest:
     completed_quest = dm_quest
@@ -14,7 +22,7 @@ def run_quest(dm_quest: Quest) -> Quest:
 
     if sum(completed_quest.party_rolls) > dm_quest.quest_difficulty:
         completed_quest.outcome = 1
-        #also give characters rewards here depending on quest type
+        give_rewards(completed_quest)
     else:
         completed_quest.outcome = 0
 
@@ -23,7 +31,7 @@ def run_quest(dm_quest: Quest) -> Quest:
 def run_adventure():
     character_ids = charutils.get_character_ids()
     
-    QUEST_TYPES = ["Experience", "Gear"]
+    QUEST_TYPES = ["Experience", "Loot"]
     quest_type = QUEST_TYPES[0] #do random in future
 
     quest = Quest(quest_type, [], [], 0, 0)
