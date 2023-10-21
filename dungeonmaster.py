@@ -44,7 +44,7 @@ def run_quest(dm_quest: Quest) -> Quest:
 
     return completed_quest
 
-def run_adventure():
+def run_adventure() -> Quest:
     character_ids = charutils.get_character_ids()
     
     QUEST_TYPES = ["Experience", "Loot"]
@@ -55,7 +55,7 @@ def run_adventure():
     quest = Quest(quest_type, [], [], 0, quest_hook, 0)
     
     if not character_ids:
-        return "I tried to run an adventure but there were no characters around" 
+        return quest 
     
     if(len(character_ids)) == 1:
         quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
