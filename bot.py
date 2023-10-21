@@ -209,7 +209,7 @@ async def find(interaction: discord.Interaction):
 #LOOP FUNCTIONS
 def create_day_report_embed():
     day_report = dungeonmaster.run_long_rest()
-    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During they rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
+    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
     if len(day_report) == 0:
         day_embed.add_field(name="Absolutely nothing", value="")
         return day_embed
