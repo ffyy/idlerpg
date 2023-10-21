@@ -20,7 +20,7 @@ def update_db_character(character: CharacterDB):
 def update_db_gear(gear: Gear):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("UPDATE gear SET gearscore = ?, unattuned = ?", (gear.gearscore, gear.unattuned))
+    cur.execute("UPDATE gear SET gearscore = ?, unattuned = ? WHERE id_ = ?", (gear.gearscore, gear.unattuned, gear.id_))
     db.commit()
     cur.close
 
