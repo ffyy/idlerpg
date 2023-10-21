@@ -1,3 +1,4 @@
+from asyncio import sleep
 import os
 import discord
 import initialsetup
@@ -23,37 +24,74 @@ CHANNEL = discord.Object(id=int(CHANNEL_ID))
 class RpgEngine(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.counter = 0
+
         self.tree = app_commands.CommandTree(self)
 
     async def setup_hook(self) -> None:
         self.tree.copy_global_to(guild=GUILD)
-        #self.run_adventures.start()
 
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
-        channel = self.get_channel(CHANNEL.id)
-        #await channel.send("I have awoken")
+        #self.run_adventures.start()
+        #self.run_long_rests.start()
+        print("loops started")
 
-    @tasks.loop(seconds=600)
+    @tasks.loop(minutes=TIMESCALE) #change to minutes for real use
     async def run_adventures(self):
+        print("running adventure " + str(self.run_adventures.current_loop))
         channel = self.get_channel(CHANNEL.id)
-        await channel.send(dungeonmaster.run_adventure())
+        await channel.send(embed=create_adventure_embed())
 
     @run_adventures.before_loop
     async def before_adventuring(self):
-        await self.wait_until_ready()        
-        
+        if self.run_adventures.current_loop == 0:
+            sleep_time = TIMESCALE*60/2 #half of timescale in seconds
+            print("waiting until start: " + sleep_time)
+            await sleep(sleep_time)
+            await self.wait_until_ready()
+        else:
+            await self.wait_until_ready()
+
+    @tasks.loop(minutes=TIMESCALE)
+    async def run_long_rests(self):
+        print("running rest " + str(self.run_long_rests.current_loop))
+        channel = self.get_channel(CHANNEL.id)
+        await channel.send(embed=create_day_report_embed())
+
+    @run_long_rests.before_loop
+    async def before_resting(self):
+        if self.run_long_rests.current_loop == 0:
+            sleep_time = TIMESCALE*60 #timescale in seconds
+            print("waiting until start: " + sleep_time)
+            await sleep(sleep_time)
+            await self.wait_until_ready()
+        else:
+            await self.wait_until_ready()
+       
 
 intents = discord.Intents.default()
 intents.members = True
 client = RpgEngine(intents=intents)
 
+
+# DEBUG COMMANDS
 if DEBUG_MODE == "1":
     @client.tree.command(name="levelup",description="Level up your character") #testing command
     async def levelup(interaction: discord.Interaction):
         await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
+
+    @client.tree.command(name="startloops",description="Start loops") #testing command
+    async def startloops(interaction: discord.Interaction):
+        client.run_adventures.start()
+        client.run_long_rests.start()
+        await interaction.response.send_message("Started loops")
+
+    @client.tree.command(name="stoploops",description="Stop loops") #testing command
+    async def stoploops(interaction: discord.Interaction):
+        client.run_adventures.stop()
+        client.run_long_rests.stop()
+        await interaction.response.send_message("Stopped loops")
 
     @client.tree.command(name="adventure",description="Run an adventure") #testing command
     async def adventure(interaction: discord.Interaction):
@@ -91,9 +129,16 @@ if DEBUG_MODE == "1":
         day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
         await interaction.channel.send(embed=day_embed)
 
-@client.tree.command(name="top10",description="Get top10 characters") #make it prettier
-async def top10(interaction: discord.Interaction):
-    await interaction.response.send_message(charutils.get_top10())
+#TREE COMMANDS
+
+@client.tree.command(name="leaderboard",description="Get top X characters") #make it prettier
+async def leaderboard(interaction: discord.Interaction, top_x: int):
+    if top_x > 0 and top_x <= 10:
+        await interaction.response.send_message("Showing leaderboard", ephemeral=True)
+        leaderboard_embed = await create_leaderboard_embed(top_x)
+        await interaction.channel.send(embed=leaderboard_embed)
+    else:
+        await interaction.response.send_message("You need to enter a number between 0 and 10", ephemeral=True)
 
 class DeleteView(discord.ui.View):
     def __init__(self, name):
@@ -122,9 +167,9 @@ async def delete(interaction: discord.Interaction, name: str):
 
 class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
-        discord.SelectOption(label="Rogue", value="1", description="Rogues need to be lucky to get ahead (1d100)"),
-        discord.SelectOption(label="Fighter", value="2", description="Fighters are solid in any situation (5d20)"),
-        discord.SelectOption(label="Hobbit", value="3", description="Hobbits are overall bad, but start with a magic ring (4d10 + 25 gearscore)")
+        discord.SelectOption(label="Rogue", value="1", description="Trust in your luck (1d100)"),
+        discord.SelectOption(label="Fighter", value="2", description="Solid in any situation (5d20)"),
+        discord.SelectOption(label="Hobbit", value="3", description="Generally bad, but has a magic ring (4d10+20 gs)")
 ]
     def __init__(self, name):
         super().__init__(timeout=100)
@@ -159,5 +204,73 @@ async def find(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("You don't have a character yet.\nUse /register to start.", ephemeral=True)
 
+#LOOP FUNCTIONS
+def create_day_report_embed():
+    day_report = dungeonmaster.run_long_rest()
+    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During they rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
+    if len(day_report) == 0:
+        day_embed.add_field(name="Absolutely nothing", value="")
+        return day_embed
+    characters_string = ""
+    levels_string = ""
+    gearscore_string = ""
+    for character in day_report:
+        characters_string = ''.join([characters_string, character.character_name])
+        characters_string = ''.join([characters_string, "\n"])
+        levels_string = ''.join([levels_string, str(character.level_result)])
+        levels_string = ''.join([levels_string, "\n"])
+        gearscore_string = ''.join([gearscore_string, str(character.gearscore_result)])
+        gearscore_string = ''.join([gearscore_string, "\n"])
+    day_embed.add_field(name="Characters", value=characters_string, inline=True)
+    day_embed.add_field(name="Level", value=levels_string, inline=True)        
+    day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
+    return day_embed
+
+def create_adventure_embed():
+    quest = dungeonmaster.run_adventure()
+    if len(quest.party) == 0:
+        quest_embed = discord.Embed(title="I tried to run an adventure, but nobody showed up.")
+        return quest_embed
+    quest_embed = discord.Embed(title="An epic adventure was had!", type="rich", description=quest.quest_journal)
+    party_members_string = ""
+    adventurer_rolls_string = ""
+    for i, adventurer in enumerate(quest.party):
+        party_members_string = ''.join([party_members_string, adventurer.name])
+        party_members_string = ''.join([party_members_string, "\n"])
+        adventurer_rolls_string = ''.join([adventurer_rolls_string, str(quest.party_rolls[i])])
+        adventurer_rolls_string = ''.join([adventurer_rolls_string, "\n"])
+    quest_embed.add_field(name="Heroes", value=party_members_string, inline=True)
+    quest_embed.add_field(name="Rolls", value=adventurer_rolls_string, inline=True)        
+    return quest_embed
+
+async def create_leaderboard_embed(top_x):
+    leaderboard = charutils.get_leaderboard(top_x)
+    if len(leaderboard) == 0:
+        leaderboard_embed = discord.Embed(title="There are no characters yet.")
+        return leaderboard_embed
+    leaderboard_embed = discord.Embed(title="Top " + str(top_x) + " characters in this world:")
+    character_names_string = ""
+    character_stats_string = ""
+    player_names_string = ""
+    discord_names = []
+    for player in leaderboard:
+        player = await client.fetch_user(player.player_id)
+        player_name = player.display_name
+        discord_names.append(player_name)
+    for i,character in enumerate(leaderboard):
+        character_names_string = ''.join([character_names_string, character.character_name])
+        character_names_string = ''.join([character_names_string, "\n"])
+        character_stats_string = ''.join([character_stats_string, str(character.level)])
+        character_stats_string = ''.join([character_stats_string, "/"])
+        character_stats_string = ''.join([character_stats_string, str(character.gearscore)])
+        character_stats_string = ''.join([character_stats_string, "\n"])
+        player_names_string = ''.join([player_names_string, discord_names[i]])
+        player_names_string = ''.join([player_names_string, "\n"])
+    leaderboard_embed.add_field(name="Character", value=character_names_string, inline=True)
+    leaderboard_embed.add_field(name="Level/Gearscore", value=character_stats_string, inline=True)
+    leaderboard_embed.add_field(name="Player", value=player_names_string, inline=True)
+
+    return leaderboard_embed
+       
 print("starting bot")
 client.run(TOKEN)

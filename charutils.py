@@ -103,6 +103,14 @@ def get_character_by_id(id_) -> Character:
         data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
         character = db_character_to_character(data_character)
         return character
+    
+def get_discord_id_by_character(character):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT discord_id FROM player WHERE character_id = ?", (character.id_,))
+    db_player = cur.fetchone()
+    cur.close()
+    return db_player[0] 
 
 def get_character_by_player_id(player_id) -> Character:
     db = sqlite3.connect(DB_PATH)
@@ -193,3 +201,20 @@ def level_me_up(player_id):
         return "Character " + character.name + " is now level " + str(character.level)
     else:
         return "You don't even have a character.\nUse /register to register a new character."
+    
+def get_leaderboard(top_x):
+    characters = []
+    top_characters = []
+    for character_id in get_character_ids():
+        characters.append(get_character_by_id(character_id[0]))
+    characters.sort(key=lambda character: (-character.level, -character.gear.gearscore))
+    for i, character in enumerate(characters):
+        if i < top_x:
+            top_characters.append(character)
+
+    leaderboard = []
+    for character in top_characters:
+        entry = LeaderboardEntry(character.name, character.level, character.gear.gearscore, get_discord_id_by_character(character))
+        leaderboard.append(entry)
+
+    return leaderboard
