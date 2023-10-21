@@ -87,6 +87,7 @@ def run_long_rest():
 
     for i, rested_character in enumerate(rested_characters):
         charutils.update_db_character(charutils.character_to_db_character(rested_character))
+        charutils.update_db_gear(rested_character.gear)
         if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore:
             personal_report = DayReport(rested_character.name, rested_character.level, rested_character.gear.gearscore)
             if rested_character.level != old_characters[i].level:
