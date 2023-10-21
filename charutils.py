@@ -41,7 +41,7 @@ def register_character(name, class_id, player_id):
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
         db.commit()
         cur.close()
-        return "Saved character called " + character.name + " with class " + class_name + " to database"
+        return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."
     except:
         traceback.print_exc()
         return "Something went wrong"
