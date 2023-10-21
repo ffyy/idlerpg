@@ -67,6 +67,13 @@ class Character:
             result += this_roll
         return result
     
+    def roll_for_passive_xp(self) -> int:
+        BASE_XP = 3600 #1 xp per second with default timescale 60
+        xp_multiplier = self.roll_dice()
+        xp = BASE_XP * xp_multiplier / 100
+        print("calculated passive xp. multiplier:" + str(xp_multiplier) + " xp:" + str(xp))
+        return xp
+
     def take_long_rest(self):
         rested_character = Character(self.id_, self.name, self.level, self.current_xp, self.character_class, self.gear)
         while rested_character.current_xp >= 10000:

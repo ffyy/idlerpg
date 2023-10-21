@@ -79,7 +79,7 @@ def run_long_rest():
         old_characters.append(charutils.get_character_by_id(character_id[0]))
 
     for old_character in old_characters:
-        old_character.current_xp += 3600 #with timescale 60, everyone gets 1 xp per second
+        old_character.current_xp += old_character.roll_for_passive_xp()
         rested_characters.append(old_character.take_long_rest())
 
     old_characters.sort(key=lambda character: character.id_)
