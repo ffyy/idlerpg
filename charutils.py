@@ -13,7 +13,6 @@ def update_db_character(character: CharacterDB):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, class_id = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.class_id, character.gear_id, character.id_))
-    print("Updating old character")
     db.commit()
     cur.close()
 
@@ -172,7 +171,6 @@ def is_name_valid(name) -> str:
     cur = db.cursor()
     cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
     count = int(cur.fetchone()[0])
-    print(str(count))
     if count > 0 or len(name) > 20 or not name.isalpha():
         return False
     else:

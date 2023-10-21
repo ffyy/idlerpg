@@ -180,7 +180,6 @@ class RegisterView(discord.ui.View):
     @discord.ui.select(placeholder="Select a class", options=CHARACTER_CLASSES, max_values=1)
     async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction.response.defer()
-        #print(str(interaction.user.id) + " chose a class")
         response = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
         await interaction.followup.edit_message(interaction.message.id, content=("Enjoy idling!"), view=None)
         await interaction.channel.send(response)
