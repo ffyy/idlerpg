@@ -71,7 +71,7 @@ class Character:
         BASE_XP = 3600 #1 xp per second with default timescale 60
         xp_multiplier = self.roll_dice()
         xp = BASE_XP * xp_multiplier / 100
-        print("calculated passive xp. multiplier:" + str(xp_multiplier) + " xp:" + str(xp))
+        print(self.name + " calculated passive xp. multiplier:" + str(xp_multiplier) + " xp:" + str(xp))
         return xp
 
     def take_long_rest(self):
