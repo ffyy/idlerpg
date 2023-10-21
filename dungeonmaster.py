@@ -79,13 +79,14 @@ def run_long_rest():
         old_characters.append(charutils.get_character_by_id(character_id[0]))
 
     for old_character in old_characters:
-        print(old_character.gear.gearscore)
+        old_character.current_xp += 3600 #with timescale 60, everyone gets 1 xp per second
         rested_characters.append(old_character.take_long_rest())
 
     old_characters.sort(key=lambda character: character.id_)
     rested_characters.sort(key=lambda character: character.id_)
 
     for i, rested_character in enumerate(rested_characters):
+        charutils.update_db_character(charutils.character_to_db_character(rested_character))
         if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore:
             personal_report = DayReport(rested_character.name, rested_character.level, rested_character.gear.gearscore)
             if rested_character.level != old_characters[i].level:
