@@ -17,7 +17,8 @@ def do():
 
     character_classes = [(1, "Thief", 1, 100, 0),
                          (2, "Fighter", 5, 20, 0),
-                         (3, "Hobbit", 4, 10, 0)]
+                         (3, "Hobbit", 4, 10, 0),
+                         (3, "Big Titty Goth Girl", 5, 20, 0)]
     
     print("creating new tables")
     cur = db.cursor()

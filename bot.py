@@ -171,7 +171,8 @@ class RegisterView(discord.ui.View):
     CHARACTER_CLASSES = [
         discord.SelectOption(label="Rogue", value="1", description="Trust in your luck (1d100)"),
         discord.SelectOption(label="Fighter", value="2", description="Solid in any situation (5d20)"),
-        discord.SelectOption(label="Hobbit", value="3", description="Generally bad, but has a magic ring (4d10+20 gs)")
+        discord.SelectOption(label="Hobbit", value="3", description="Generally bad, but has a magic ring (4d10+20 gs)"),
+        discord.SelectOption(label="Big Titty Goth Girl", value="4", description="Literally just a fighter, but with tits")
 ]
     def __init__(self, name):
         super().__init__(timeout=100)
