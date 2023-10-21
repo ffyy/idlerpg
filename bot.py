@@ -33,21 +33,23 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
-        #self.run_adventures.start()
-        #self.run_long_rests.start()
+        self.run_adventures.start()
+        self.run_long_rests.start()
         print("loops started")
 
-    @tasks.loop(minutes=TIMESCALE) #change to minutes for real use
+    @tasks.loop(minutes=(TIMESCALE))
     async def run_adventures(self):
         print("running adventure " + str(self.run_adventures.current_loop))
+        if self.run_adventures.current_loop == 0:
+            self.run_adventures.change_interval(minutes=TIMESCALE)
         channel = self.get_channel(CHANNEL.id)
         await channel.send(embed=create_adventure_embed())
 
     @run_adventures.before_loop
     async def before_adventuring(self):
         if self.run_adventures.current_loop == 0:
-            sleep_time = TIMESCALE*60/2 #half of timescale in seconds
-            print("waiting until start: " + sleep_time)
+            sleep_time = TIMESCALE*60//2 #half of timescale in seconds
+            print(str(self.run_adventures) + " waiting until start: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
         else:
@@ -63,7 +65,7 @@ class RpgEngine(discord.Client):
     async def before_resting(self):
         if self.run_long_rests.current_loop == 0:
             sleep_time = TIMESCALE*60 #timescale in seconds
-            print("waiting until start: " + sleep_time)
+            print(str(self.run_long_rests) + " waiting until start: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
         else:
