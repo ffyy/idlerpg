@@ -43,15 +43,11 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])        
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Success!**"])
-        print(vars(completed_quest))
         give_rewards(completed_quest)
     else:
         completed_quest.outcome = 0
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Unfortunately,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
-        #completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Had they succeeded, they would have got some"])
-        #completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, completed_quest.quest_type])
-        #completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "."])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])  
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Failure!**"])
@@ -62,9 +58,7 @@ def run_adventure() -> Quest:
     character_ids = charutils.get_character_ids()
     
     QUEST_TYPES = ["experience", "loot"]
-    #quest_type = random.choice(QUEST_TYPES)
     quest_type = ["experience"]
-    #quest_type.append("experience")
 
     quest_hook = ' '.join(["The heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 

@@ -70,7 +70,7 @@ class Character:
     def roll_for_passive_xp(self) -> int:
         BASE_XP = 3600 #1 xp per second with default timescale 60
         xp_multiplier = self.roll_dice()
-        xp = BASE_XP * xp_multiplier / 100
+        xp = int(BASE_XP * xp_multiplier / 100)
         print(self.name + " calculated passive xp. multiplier:" + str(xp_multiplier) + " xp:" + str(xp))
         return xp
 
