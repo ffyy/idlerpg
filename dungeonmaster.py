@@ -1,3 +1,4 @@
+import math
 import random
 import charutils
 from rpgobjects import *
@@ -70,7 +71,7 @@ def run_adventure() -> Quest:
     if(len(character_ids)) == 1:
         quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
     else:
-        party_size = random.randint(2,len(character_ids)/2)
+        party_size = random.randint(2,(max(2, (len(character_ids)/2))))
         for character_id in random.sample(character_ids, party_size):
             quest.party.append(charutils.get_character_by_id(character_id[0]))   
 
