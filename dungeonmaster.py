@@ -7,42 +7,51 @@ SUCCESS_DESCRIPTIONS = open("content/successes.txt").read().splitlines()
 FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
 
 def give_rewards(quest: Quest):
-    if quest.quest_type == "experience":
+    if "experience" in quest.quest_type:
         for adventurer in quest.party:
             adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
             charutils.update_db_character(charutils.character_to_db_character(adventurer))
-    elif quest.quest_type == "loot":
+    if "loot" in quest.quest_type:
         for adventurer in quest.party:
             adventurer.gear.unattuned += 1
             charutils.update_db_gear(adventurer.gear)
 
+
 def run_quest(dm_quest: Quest) -> Quest:
+    QUEST_ITEM_THRESHOLD = 0.8
+    
     completed_quest = dm_quest
     for adventurer in dm_quest.party:
         adventurer_roll = adventurer.roll_dice() + adventurer.gear.gearscore
         completed_quest.party_rolls.append(adventurer_roll)
 
+    party_max_roll = 100*len(dm_quest.party)
+    if (random.randint(1,100) <= 100*(sum(completed_quest.party_rolls) - dm_quest.quest_difficulty)/dm_quest.quest_difficulty) or (party_max_roll * QUEST_ITEM_THRESHOLD <= sum(completed_quest.party_rolls)):
+        completed_quest.quest_type.append("loot")
+
     if sum(completed_quest.party_rolls) > dm_quest.quest_difficulty:
         completed_quest.outcome = 1
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Luckily,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
-        if dm_quest.quest_type == "experience":
+        if "experience" in dm_quest.quest_type:
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "This was a very valuable experience for everyone."])
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "XP reward:"])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/(100*len(completed_quest.party)))))])
-        elif dm_quest.quest_type == "loot":
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
+            completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "."])
+        if "loot" in dm_quest.quest_type:
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Everyone found a magic item."])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])        
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Success!**"])
+        print(vars(completed_quest))
         give_rewards(completed_quest)
     else:
         completed_quest.outcome = 0
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Unfortunately,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
-        completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Had they succeeded, they would have got some"])
-        completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, completed_quest.quest_type])
-        completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "."])
+        #completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Had they succeeded, they would have got some"])
+        #completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, completed_quest.quest_type])
+        #completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "."])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])  
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Failure!**"])
@@ -53,7 +62,9 @@ def run_adventure() -> Quest:
     character_ids = charutils.get_character_ids()
     
     QUEST_TYPES = ["experience", "loot"]
-    quest_type = random.choice(QUEST_TYPES)
+    #quest_type = random.choice(QUEST_TYPES)
+    quest_type = ["experience"]
+    #quest_type.append("experience")
 
     quest_hook = ' '.join(["The heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 
