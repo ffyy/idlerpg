@@ -1,4 +1,3 @@
-import math
 import random
 import charutils
 from rpgobjects import *
@@ -13,9 +12,9 @@ def give_rewards(quest: Quest):
             adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
             charutils.update_db_character(charutils.character_to_db_character(adventurer))
     if "loot" in quest.quest_type:
-        for adventurer in quest.party:
-            adventurer.gear.unattuned += 1
-            charutils.update_db_gear(adventurer.gear)
+        carry_index = quest.party_rolls.index(max(quest.party_rolls))
+        quest.party[carry_index].gear.unattuned += 1
+        charutils.update_db_gear(quest.party[carry_index].gear)
 
 
 def run_quest(dm_quest: Quest) -> Quest:
@@ -40,7 +39,9 @@ def run_quest(dm_quest: Quest) -> Quest:
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
             completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "."])
         if "loot" in dm_quest.quest_type:
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Everyone found a magic item."])
+            carry_index = completed_quest.party_rolls.index(max(completed_quest.party_rolls))
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, completed_quest.party[carry_index].name])
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "found a magic item."])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])        
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Success!**"])
