@@ -55,14 +55,15 @@ def run_adventure() -> Quest:
     quest_hook = ' '.join(["The heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 
     quest = Quest(quest_type, [], [], 0, quest_hook, 0)
-    
+
     if not character_ids:
         return quest 
     
     if(len(character_ids)) == 1:
         quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
     else:
-        for character_id in random.sample(character_ids, k=len(character_ids)//2):
+        party_size = random.randint(2,len(character_ids)/2)
+        for character_id in random.sample(character_ids, party_size):
             quest.party.append(charutils.get_character_by_id(character_id[0]))   
 
     difficulty = random.randint(1,100*len(quest.party))
