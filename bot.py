@@ -14,6 +14,7 @@ GUILD_ID = os.getenv("GUILD_ID")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 TIMESCALE = int(os.getenv("TIMESCALE"))
 DEBUG_MODE = os.getenv("DEBUG_MODE")
+ADMIN_ID = os.getenv("ADMIN_ID")
 
 if not os.path.exists(".conf"):
     initialsetup.do()
@@ -83,53 +84,60 @@ if DEBUG_MODE == "1":
     async def levelup(interaction: discord.Interaction):
         await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
 
-    @client.tree.command(name="startloops",description="Start loops") #testing command
+    '''@client.tree.command(name="startloops",description="Start loops") #testing command
     async def startloops(interaction: discord.Interaction):
         client.run_adventures.start()
         client.run_long_rests.start()
         await interaction.response.send_message("Started loops")
+    
 
     @client.tree.command(name="stoploops",description="Stop loops") #testing command
     async def stoploops(interaction: discord.Interaction):
         client.run_adventures.stop()
         client.run_long_rests.stop()
-        await interaction.response.send_message("Stopped loops")
+        await interaction.response.send_message("Stopped loops")'''
 
     @client.tree.command(name="adventure",description="Run an adventure") #testing command
     async def adventure(interaction: discord.Interaction):
-        await interaction.response.send_message("Running a quest")
-        quest = dungeonmaster.run_adventure()
-        quest_embed = discord.Embed(title="An epic adventure was had!", type="rich", description=quest.quest_journal)
-        party_members_string = ""
-        adventurer_rolls_string = ""
-        for i, adventurer in enumerate(quest.party):
-            party_members_string = ''.join([party_members_string, adventurer.name])
-            party_members_string = ''.join([party_members_string, "\n"])
-            adventurer_rolls_string = ''.join([adventurer_rolls_string, str(quest.party_rolls[i])])
-            adventurer_rolls_string = ''.join([adventurer_rolls_string, "\n"])
-        quest_embed.add_field(name="Heroes", value=party_members_string, inline=True)
-        quest_embed.add_field(name="Rolls", value=adventurer_rolls_string, inline=True)        
-        await interaction.channel.send(embed=quest_embed)
+        if interaction.user.id == ADMIN_ID:
+            await interaction.response.send_message("Running a quest")
+            quest = dungeonmaster.run_adventure()
+            quest_embed = discord.Embed(title="An epic adventure was had!", type="rich", description=quest.quest_journal)
+            party_members_string = ""
+            adventurer_rolls_string = ""
+            for i, adventurer in enumerate(quest.party):
+                party_members_string = ''.join([party_members_string, adventurer.name])
+                party_members_string = ''.join([party_members_string, "\n"])
+                adventurer_rolls_string = ''.join([adventurer_rolls_string, str(quest.party_rolls[i])])
+                adventurer_rolls_string = ''.join([adventurer_rolls_string, "\n"])
+            quest_embed.add_field(name="Heroes", value=party_members_string, inline=True)
+            quest_embed.add_field(name="Rolls", value=adventurer_rolls_string, inline=True)        
+            await interaction.channel.send(embed=quest_embed)
+        else:
+            await interaction.channel.send("You are not an admin")
 
     @client.tree.command(name="rest",description="Take a long rest") #testing command
     async def rest(interaction: discord.Interaction):
-        await interaction.response.send_message("Leveling up characters & gear")
-        day_report = dungeonmaster.run_long_rest()
-        day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
-        characters_string = ""
-        levels_string = ""
-        gearscore_string = ""
-        for character in day_report:
-            characters_string = ''.join([characters_string, character.character_name])
-            characters_string = ''.join([characters_string, "\n"])
-            levels_string = ''.join([levels_string, str(character.level_result)])
-            levels_string = ''.join([levels_string, "\n"])
-            gearscore_string = ''.join([gearscore_string, str(character.gearscore_result)])
-            gearscore_string = ''.join([gearscore_string, "\n"])
-        day_embed.add_field(name="Characters", value=characters_string, inline=True)
-        day_embed.add_field(name="Level", value=levels_string, inline=True)        
-        day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
-        await interaction.channel.send(embed=day_embed)
+        if interaction.user.id == ADMIN_ID:
+            await interaction.response.send_message("Leveling up characters & gear")
+            day_report = dungeonmaster.run_long_rest()
+            day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
+            characters_string = ""
+            levels_string = ""
+            gearscore_string = ""
+            for character in day_report:
+                characters_string = ''.join([characters_string, character.character_name])
+                characters_string = ''.join([characters_string, "\n"])
+                levels_string = ''.join([levels_string, str(character.level_result)])
+                levels_string = ''.join([levels_string, "\n"])
+                gearscore_string = ''.join([gearscore_string, str(character.gearscore_result)])
+                gearscore_string = ''.join([gearscore_string, "\n"])
+            day_embed.add_field(name="Characters", value=characters_string, inline=True)
+            day_embed.add_field(name="Level", value=levels_string, inline=True)        
+            day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
+            await interaction.channel.send(embed=day_embed)
+        else:
+            await interaction.response.send_message("You are not an admin")
 
 #TREE COMMANDS
 
