@@ -80,11 +80,11 @@ client = RpgEngine(intents=intents)
 
 # DEBUG COMMANDS
 if DEBUG_MODE == "1":
-    @client.tree.command(name="levelup",description="Level up your character") #testing command
+    '''@client.tree.command(name="levelup",description="Level up your character") #testing command
     async def levelup(interaction: discord.Interaction):
         await interaction.response.send_message(charutils.level_me_up(interaction.user.id))
 
-    '''@client.tree.command(name="startloops",description="Start loops") #testing command
+    @client.tree.command(name="startloops",description="Start loops") #testing command
     async def startloops(interaction: discord.Interaction):
         client.run_adventures.start()
         client.run_long_rests.start()
@@ -114,7 +114,7 @@ if DEBUG_MODE == "1":
             quest_embed.add_field(name="Rolls", value=adventurer_rolls_string, inline=True)        
             await interaction.channel.send(embed=quest_embed)
         else:
-            await interaction.channel.send("You are not an admin")
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
 
     @client.tree.command(name="rest",description="Take a long rest") #testing command
     async def rest(interaction: discord.Interaction):
@@ -137,7 +137,7 @@ if DEBUG_MODE == "1":
             day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
             await interaction.channel.send(embed=day_embed)
         else:
-            await interaction.response.send_message("You are not an admin")
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
 
 #TREE COMMANDS
 
