@@ -14,7 +14,7 @@ GUILD_ID = os.getenv("GUILD_ID")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 TIMESCALE = int(os.getenv("TIMESCALE"))
 DEBUG_MODE = os.getenv("DEBUG_MODE")
-ADMIN_ID = os.getenv("ADMIN_ID")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 if not os.path.exists(".conf"):
     initialsetup.do()
