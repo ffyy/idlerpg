@@ -76,9 +76,12 @@ class Character:
 
     def take_long_rest(self):
         rested_character = Character(self.id_, self.name, self.level, self.current_xp, self.character_class, self.gear)
-        while rested_character.current_xp >= 10000:
+        if self.character_class.id_ == 5:
+            xp_to_level = 20000
+        else: xp_to_level == 10000
+        while rested_character.current_xp >= xp_to_level:
             rested_character.level += 1
-            rested_character.current_xp = max(rested_character.current_xp - 10000, 0)
+            rested_character.current_xp = max(rested_character.current_xp - xp_to_level, 0)
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0
