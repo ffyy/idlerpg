@@ -80,6 +80,26 @@ def run_adventure() -> Quest:
     quest.quest_difficulty = difficulty
 
     completed_quest = run_quest(quest)
+    
+    completed_quest_lists = []
+    completed_quest_lists.append(["Hero"])
+    completed_quest_lists.append(["Class"])
+    completed_quest_lists.append(["Level"])
+    completed_quest_lists.append(["GS"])
+    completed_quest_lists.append(["Roll"])
+    
+    for i,hero in enumerate(completed_quest.party):
+        completed_quest_lists[0].append(hero.name)
+        completed_quest_lists[1].append(hero.character_class.name)
+        completed_quest_lists[2].append(str(hero.level))
+        completed_quest_lists[3].append(str(hero.gear.gearscore))
+        completed_quest_lists[4].append(str(completed_quest.party_rolls[i]))
+    
+    quest_table = make_table(completed_quest_lists)
+
+    completed_quest.quest_journal = "\n```\n".join([completed_quest.quest_journal, quest_table])
+    completed_quest.quest_journal = "".join([completed_quest.quest_journal, "```"])
+
     return completed_quest
 
 def run_long_rest():
@@ -108,20 +128,23 @@ def run_long_rest():
             if rested_character.gear.gearscore != old_characters[i].gear.gearscore:
                 personal_report.gearscore_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
             day_report.append(personal_report)
+    
+    if len(day_report) == 0:
+        return ""
+    else:
+        table_lists = []
+        table_lists.append(["Character"])
+        table_lists.append(["Level"])
+        table_lists.append(["Gearscore"])
 
-    table_lists = []
-    table_lists.append(["Character"])
-    table_lists.append(["Level"])
-    table_lists.append(["Gearscore"])
+        for character in day_report:
+            table_lists[0].append(character.character_name)
+            table_lists[1].append(str(character.level_result))
+            table_lists[2].append(str(character.gearscore_result))
 
-    for character in day_report:
-        table_lists[0].append(character.character_name)
-        table_lists[1].append(str(character.level_result))
-        table_lists[2].append(str(character.gearscore_result))
+        string_day_report = make_table(table_lists)
 
-    string_day_report = make_table(table_lists)
-
-    return string_day_report
+        return string_day_report
 
 
 #helper function because discord embeds arent very cool
