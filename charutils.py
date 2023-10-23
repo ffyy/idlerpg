@@ -240,7 +240,7 @@ def get_leaderboard(top_x, users_list):
             leaderboard_lists[2].append(character.character_class.name)
             leaderboard_lists[3].append(str(character.gear.gearscore))
             leaderboard_lists[4].append(str(character.current_xp) + "/" + str(character.character_class.xp_per_level))
-            player_name = [name["name"] for name in users_list if name["id"] == get_discord_id_by_character(character)]
+            player_name = [name["name"] for name in users_list if name["id"] == int(get_discord_id_by_character(character))]
             if player_name and player_name != "": leaderboard_lists[5].append(player_name[0])
             else: leaderboard_lists[5].append("Unknown")
 
