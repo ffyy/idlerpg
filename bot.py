@@ -121,7 +121,10 @@ if DEBUG_MODE == "1":
         if interaction.user.id == ADMIN_ID:
             await interaction.response.send_message("Leveling up characters & gear")
             day_report = dungeonmaster.run_long_rest()
-            day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
+            #day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:")
+            day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed: ```\n" + day_report + "```")
+            #await interaction.channel.send(content="```" + day_report + "```")
+            '''
             characters_string = ""
             levels_string = ""
             gearscore_string = ""
@@ -135,7 +138,9 @@ if DEBUG_MODE == "1":
             day_embed.add_field(name="Characters", value=characters_string, inline=True)
             day_embed.add_field(name="Level", value=levels_string, inline=True)        
             day_embed.add_field(name="Gearscore", value=gearscore_string, inline=True)
+            '''
             await interaction.channel.send(embed=day_embed)
+            
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 

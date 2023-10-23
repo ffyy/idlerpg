@@ -72,7 +72,7 @@ def run_adventure() -> Quest:
     if(len(character_ids)) == 1:
         quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
     else:
-        party_size = random.randint(2,(max(2, (len(character_ids)/2))))
+        party_size = random.randint(2,(max(2, (len(character_ids)//2))))
         for character_id in random.sample(character_ids, party_size):
             quest.party.append(charutils.get_character_by_id(character_id[0]))   
 
@@ -109,4 +109,69 @@ def run_long_rest():
                 personal_report.gearscore_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
             day_report.append(personal_report)
 
-    return day_report
+    table_lists = []
+    table_lists.append(["Character"])
+    table_lists.append(["Level"])
+    table_lists.append(["Gearscore"])
+
+    for character in day_report:
+        table_lists[0].append(character.character_name)
+        table_lists[1].append(str(character.level_result))
+        table_lists[2].append(str(character.gearscore_result))
+
+    string_day_report = make_table(table_lists)
+
+    return string_day_report
+
+
+#helper function because discord embeds arent very cool
+def make_table(input) -> str:
+    column_widths = []
+
+    for i,column in enumerate(input):
+        column_widths.append(0)
+        for subitem in input[i]:
+            if len(subitem) > column_widths[i]:
+                column_widths[i] = len(subitem)
+
+    #top line
+    table = "+"
+    for column_width in column_widths:
+        table = "".join([table, "-"*(column_width+2)])
+        table = "".join([table, "+"])
+    table = "".join([table, "\n"])
+
+    #headers
+    for i,column in enumerate(input):
+        table = "".join([table, "|"])
+        table = " ".join([table, column[0]])
+        table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
+    table = "".join([table, "|\n+"])
+    
+    #line below
+    for column_width in column_widths:
+        table = "".join([table, "-"*(column_width+2)])
+        table = "".join([table, "+"])
+    table = "".join([table, "\n"])
+
+    #rows
+    for header in input:
+        del header[0]
+
+    while len(input[0]) > 0:
+        for i, column in enumerate(input):
+            table = "".join([table, "|"])
+            table = " ".join([table, column[0]])
+            table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
+            del column[0]
+        table = "".join([table, "|\n"])
+    
+    #bottom line
+    table = "".join([table, "+"])
+    for column_width in column_widths:
+        table = "".join([table, "-"*(column_width+2)])
+        table = "".join([table, "+"])
+    
+    print(table)
+
+    return(table)
