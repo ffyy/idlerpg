@@ -15,19 +15,18 @@ def do():
 
     delete_all_tables(db)
 
-    character_classes = [(1, "Thief", 1, 100, 0),
-                         (2, "Fighter", 5, 20, 0),
-                         (3, "Hobbit", 4, 10, 0),
-                         (4, "Big Titty Goth Girl", 5, 20, 0),
-                         (5, "Elf", 5, 20, 20)]
+    character_classes = [(1, "Thief", 1, 100, 0, 10000, "Trust in your luck (1d100)"),
+                         (2, "Fighter", 5, 20, 0, 10000, "Solid in any situation (5d20)"),
+                         (3, "Hobbit", 4, 10, 0, 8000, "Bad at everything, but starts with a magic ring (4d10)"),
+                         (4, "Elf", 5, 20, 20, 20000, "Just better at everything, but levels slowly (5d20+20)")]
     
     print("creating new tables")
     cur = db.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY, name VARCHAR(20) UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
-    cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name VARCHAR(20) UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL)")    
+    cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL, xp_to_level INTEGER NOT NULL, description TEXT NOT NULL)")    
     cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER NOT NULL, unattuned INTEGER NOT NULL)")
-    cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id VARCHAR(100) UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
-    cur.executemany("INSERT INTO class VALUES (?, ?, ?, ?, ?)", character_classes)
+    cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id TEXT UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
+    cur.executemany("INSERT INTO class VALUES (?, ?, ?, ?, ?, ?, ?)", character_classes)
     db.commit()
 
     create_config()

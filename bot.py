@@ -181,18 +181,16 @@ async def delete(interaction: discord.Interaction, name: str):
         await interaction.response.send_message("This is not your character, you can't delete it. Your character is called " + current_character.name, ephemeral=True)
 
 class RegisterView(discord.ui.View):
-    CHARACTER_CLASSES = [
-        discord.SelectOption(label="Rogue", value="1", description="Trust in your luck (1d100)"),
-        discord.SelectOption(label="Fighter", value="2", description="Solid in any situation (5d20)"),
-        discord.SelectOption(label="Hobbit", value="3", description="Generally bad, but has a magic ring (4d10+20 gs)"),
-        discord.SelectOption(label="Big Titty Goth Girl", value="4", description="Literally just a fighter, but with tits"),
-        discord.SelectOption(label="Elf", value="5", description="Better than everyone, but needs more xp per level (5d20+20)")
-]
+    character_classes = []
+    configured_classes = charutils.get_all_classes()
+    for character_class in configured_classes:
+        character_classes.append(discord.SelectOption(label=character_class.name, value=character_class.id_, description=character_class.description))
+    
     def __init__(self, name):
         super().__init__(timeout=100)
         self.name = name
 
-    @discord.ui.select(placeholder="Select a class", options=CHARACTER_CLASSES, max_values=1)
+    @discord.ui.select(placeholder="Select a class", options=character_classes, max_values=1)
     async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction.response.defer()
         response = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)

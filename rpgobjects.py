@@ -18,13 +18,17 @@ class CharacterClass:
             name,
             dice,
             die_size,
-            bonus
+            bonus,
+            xp_to_level,
+            description
     ):
         self.id_ = id_
         self.name = name
         self.dice = dice
         self.die_size = die_size
         self.bonus = bonus
+        self.xp_to_level = xp_to_level
+        self.description = description
 
 class CharacterDB:
     def __init__(
@@ -71,17 +75,13 @@ class Character:
         BASE_XP = 3600 #1 xp per second with default timescale 60
         xp_multiplier = self.roll_dice()
         xp = int(BASE_XP * xp_multiplier / 100)
-        print(self.name + " calculated passive xp. multiplier:" + str(xp_multiplier) + " xp:" + str(xp))
         return xp
 
     def take_long_rest(self):
         rested_character = Character(self.id_, self.name, self.level, self.current_xp, self.character_class, self.gear)
-        xp_to_level = 10000
-        if self.character_class.id_ == 5:
-            xp_to_level = 20000
-        while rested_character.current_xp >= xp_to_level:
+        while rested_character.current_xp >= self.character_class.xp_to_level:
             rested_character.level += 1
-            rested_character.current_xp = max(rested_character.current_xp - xp_to_level, 0)
+            rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_to_level, 0)
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0
