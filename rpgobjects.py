@@ -19,7 +19,7 @@ class CharacterClass:
             dice,
             die_size,
             bonus,
-            xp_to_level,
+            xp_per_level,
             description
     ):
         self.id_ = id_
@@ -27,7 +27,7 @@ class CharacterClass:
         self.dice = dice
         self.die_size = die_size
         self.bonus = bonus
-        self.xp_to_level = xp_to_level
+        self.xp_per_level = xp_per_level
         self.description = description
 
 class CharacterDB:
@@ -79,9 +79,9 @@ class Character:
 
     def take_long_rest(self):
         rested_character = Character(self.id_, self.name, self.level, self.current_xp, self.character_class, self.gear)
-        while rested_character.current_xp >= self.character_class.xp_to_level:
+        while rested_character.current_xp >= self.character_class.xp_per_level:
             rested_character.level += 1
-            rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_to_level, 0)
+            rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0

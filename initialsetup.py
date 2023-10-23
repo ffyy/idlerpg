@@ -23,7 +23,7 @@ def do():
     print("creating new tables")
     cur = db.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
-    cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL, xp_to_level INTEGER NOT NULL, description TEXT NOT NULL)")    
+    cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL, xp_per_level INTEGER NOT NULL, description TEXT NOT NULL)")    
     cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER NOT NULL, unattuned INTEGER NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id TEXT UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
     cur.executemany("INSERT INTO class VALUES (?, ?, ?, ?, ?, ?, ?)", character_classes)
