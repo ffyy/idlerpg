@@ -2,6 +2,7 @@ import os
 import sqlite3
 import traceback
 from rpgobjects import *
+from helpers import *
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -109,7 +110,10 @@ def get_discord_id_by_character(character):
     cur.execute("SELECT discord_id FROM player WHERE character_id = ?", (character.id_,))
     db_player = cur.fetchone()
     cur.close()
-    return db_player[0] 
+    if db_player:
+        return db_player[0]
+    else:
+        return None
 
 def get_character_by_player_id(player_id) -> Character:
     db = sqlite3.connect(DB_PATH)
@@ -210,19 +214,36 @@ def level_me_up(player_id):
     else:
         return "You don't even have a character.\nUse /register to register a new character."
     
-def get_leaderboard(top_x):
+def get_leaderboard(top_x, users_list):
     characters = []
     top_characters = []
     for character_id in get_character_ids():
         characters.append(get_character_by_id(character_id[0]))
-    characters.sort(key=lambda character: (-character.level, -character.gear.gearscore))
+    characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
     for i, character in enumerate(characters):
         if i < top_x:
             top_characters.append(character)
 
-    leaderboard = []
-    for character in top_characters:
-        entry = LeaderboardEntry(character.name, character.level, character.gear.gearscore, get_discord_id_by_character(character))
-        leaderboard.append(entry)
+    if len(top_characters) == 0:
+        return ""
+    else:
+        leaderboard_lists = []
+        leaderboard_lists.append(["Name"])
+        leaderboard_lists.append(["Level"])
+        leaderboard_lists.append(["Class"])
+        leaderboard_lists.append(["GS"])
+        leaderboard_lists.append(["XP"])
+        leaderboard_lists.append(["Player"])
+        for character in top_characters:
+            leaderboard_lists[0].append(character.name)
+            leaderboard_lists[1].append(str(character.level))
+            leaderboard_lists[2].append(character.character_class.name)
+            leaderboard_lists[3].append(str(character.gear.gearscore))
+            leaderboard_lists[4].append(str(character.current_xp) + "/" + str(character.character_class.xp_per_level))
+            player_name = [name["name"] for name in users_list if name["id"] == get_discord_id_by_character(character)]
+            if player_name and player_name != "": leaderboard_lists[5].append(player_name[0])
+            else: leaderboard_lists[5].append("Unknown")
 
-    return leaderboard
+        leaderboard = make_table(leaderboard_lists)
+        
+        return leaderboard

@@ -94,8 +94,7 @@ if DEBUG_MODE == "1":
         if interaction.user.id == ADMIN_ID:
             await interaction.response.send_message("Leveling up characters & gear")
             day_embed = create_day_report_embed()
-            await interaction.channel.send(embed=day_embed)
-            
+            await interaction.channel.send(embed=day_embed)          
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
@@ -104,7 +103,7 @@ if DEBUG_MODE == "1":
 @client.tree.command(name="leaderboard",description="Get top X characters") #make it prettier
 async def leaderboard(interaction: discord.Interaction, top_x: int):
     if top_x > 0 and top_x <= 10:
-        await interaction.response.send_message("Showing leaderboard", ephemeral=True)
+        await interaction.response.send_message("Showing leaderboard")
         leaderboard_embed = await create_leaderboard_embed(top_x)
         await interaction.channel.send(embed=leaderboard_embed)
     else:
@@ -191,32 +190,15 @@ def create_adventure_embed():
     return quest_embed
 
 async def create_leaderboard_embed(top_x):
-    leaderboard = charutils.get_leaderboard(top_x)
-    if len(leaderboard) == 0:
+    members_list = client.get_all_members()
+    users_list = []
+    for member in members_list:
+        users_list.append({"id":member.id, "name":member.display_name})
+    leaderboard = charutils.get_leaderboard(top_x, users_list)
+    if leaderboard == "":
         leaderboard_embed = discord.Embed(title="There are no characters yet.")
         return leaderboard_embed
-    leaderboard_embed = discord.Embed(title="Top " + str(top_x) + " characters in this world:")
-    character_names_string = ""
-    character_stats_string = ""
-    player_names_string = ""
-    discord_names = []
-    for player in leaderboard:
-        player = await client.fetch_user(player.player_id)
-        player_name = player.display_name
-        discord_names.append(player_name)
-    for i,character in enumerate(leaderboard):
-        character_names_string = ''.join([character_names_string, character.character_name])
-        character_names_string = ''.join([character_names_string, "\n"])
-        character_stats_string = ''.join([character_stats_string, str(character.level)])
-        character_stats_string = ''.join([character_stats_string, "/"])
-        character_stats_string = ''.join([character_stats_string, str(character.gearscore)])
-        character_stats_string = ''.join([character_stats_string, "\n"])
-        player_names_string = ''.join([player_names_string, discord_names[i]])
-        player_names_string = ''.join([player_names_string, "\n"])
-    leaderboard_embed.add_field(name="Character", value=character_names_string, inline=True)
-    leaderboard_embed.add_field(name="Level/Gearscore", value=character_stats_string, inline=True)
-    leaderboard_embed.add_field(name="Player", value=player_names_string, inline=True)
-
+    leaderboard_embed = discord.Embed(title="Top " + str(top_x) + " characters in this world:", description="```\n" + leaderboard + "```")
     return leaderboard_embed
        
 print("starting bot")
