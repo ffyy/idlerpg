@@ -46,3 +46,16 @@ def make_table(input) -> str:
         table = "".join([table, "+"])
     
     return(table)
+
+def debug_print(var):
+    printstring = ""
+    printstring = "".join("the type is")
+    printstring = " ".join([printstring, str(type(var))])
+    printstring = "\n".join([printstring, "the string representation is"])
+    printstring = " ".join([printstring, str(var)])
+    try:
+        printstring = "\n".join([printstring, "the vars are"])
+        printstring = " ".join([printstring, vars(var)])
+    except:
+        pass
+    print(printstring)
