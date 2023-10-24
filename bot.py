@@ -37,6 +37,7 @@ class RpgEngine(discord.Client):
         print("commands synced")
         self.run_adventures.start()
         self.run_long_rests.start()
+        self.run_pvp_encounters.start()
         print("loops started")
 
     @tasks.loop(minutes=(TIMESCALE))
@@ -68,6 +69,22 @@ class RpgEngine(discord.Client):
         if self.run_long_rests.current_loop == 0:
             sleep_time = TIMESCALE*60 #timescale in seconds
             print(str(self.run_long_rests) + " waiting until start: " + str(sleep_time))
+            await sleep(sleep_time)
+            await self.wait_until_ready()
+        else:
+            await self.wait_until_ready()
+
+    @tasks.loop(minutes=TIMESCALE)
+    async def run_pvp_encounters(self):
+        print("running pvp " + str(self.run_pvp_encounters.current_loop))
+        channel = self.get_channel(CHANNEL.id)
+        await channel.send(embed=create_pvp_embed())
+
+    @run_pvp_encounters.before_loop
+    async def before_pvp(self):
+        if self.run_pvp_encounters.current_loop == 0:
+            sleep_time = int((TIMESCALE*60)*2/3) #timescale in seconds
+            print(str(self.run_pvp_encounters) + " waiting until start: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
         else:
