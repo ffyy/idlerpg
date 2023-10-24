@@ -59,7 +59,7 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])  
-        completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Failure!**"])
+        completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Failure!**"])
 
     return completed_quest
 
@@ -124,21 +124,21 @@ def run_pvp_encounter():
     for character in pvp_characters:
         character_roll = character.roll_dice() + character.gear.gearscore
         pvp_rolls.append(character_roll)
-    pvp_journal = [pvp_characters[0].name + " tried to gank " + pvp_characters[1].name + "!"]
+    pvp_journal = [pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."]
     xp_reward = max(1, pvp_characters[1].level - pvp_characters[0].level) * 2000
     if pvp_rolls[0] >= pvp_rolls[1]:
-        pvp_journal[0] = "\n".join([pvp_journal[0], "**Success!**"])
-        pvp_journal[0] = "\n".join([pvp_journal[0], pvp_characters[0].name])
-        pvp_journal[0] = " ".join([pvp_journal[0], "gained"])
-        pvp_journal[0] = " ".join([pvp_journal[0], str(xp_reward)])
-        pvp_journal[0] = " ".join([pvp_journal[0], "experience."])
-        debug_print(pvp_characters[0].current_xp)
+        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
+        pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
+        pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])        
+        pvp_journal[0] = ": ".join([pvp_journal[0], str(xp_reward)])
         pvp_characters[0].current_xp += xp_reward
-        debug_print(pvp_characters[0].current_xp)
         charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
     elif pvp_rolls[0] < pvp_rolls[1]:
-        pvp_journal[0] = "\n".join([pvp_journal[0], "**Failure!**"])
-    pvp_journal[0] = "\n".join([pvp_journal[0], "Here is how it played out:"])
+        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
+        pvp_journal[0] = " - ".join([pvp_journal[0], "**Failure!**"])
 
     pvp_report_lists = []
     pvp_report_lists.append(["Fighter"])
