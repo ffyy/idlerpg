@@ -90,6 +90,14 @@ if DEBUG_MODE == "1":
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
+    @client.tree.command(name="pvp",description="Run a PvP encounter") #testing command
+    async def pvp(interaction: discord.Interaction):
+        if interaction.user.id == ADMIN_ID:
+            pvp_embed = create_pvp_embed()
+            await interaction.response.send_message(embed=pvp_embed)
+        else:
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
+
     @client.tree.command(name="rest",description="Take a long rest") #testing command
     async def rest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
@@ -200,6 +208,11 @@ def create_adventure_embed():
         return quest_embed
     quest_embed = discord.Embed(title="An epic adventure was had!", type="rich", description=quest.quest_journal) 
     return quest_embed
+
+def create_pvp_embed():
+    pvp_encounter = dungeonmaster.run_pvp_encounter()
+    pvp_embed = discord.Embed(title="Heroes fighting heroes!", type="rich", description=pvp_encounter[0] + "```\n" + pvp_encounter[1] + "```") 
+    return pvp_embed
 
 async def create_leaderboard_embed(top_x):
     members_list = client.get_all_members()
