@@ -139,6 +139,12 @@ def get_character_ids() -> tuple:
     characters = cur.fetchall()
     return characters
 
+def get_all_characters() -> [Character]:
+    characters = []
+    for id_ in get_character_ids():
+        characters.append(get_character_by_id(id_[0]))
+    return characters
+
 def get_class(id) -> CharacterClass:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -215,10 +221,8 @@ def level_me_up(player_id):
         return "You don't even have a character.\nUse /register to register a new character."
     
 def get_leaderboard(top_x, users_list) -> str:
-    characters = []
+    characters = get_all_characters()
     top_characters = []
-    for character_id in get_character_ids():
-        characters.append(get_character_by_id(character_id[0]))
     characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
     for i, character in enumerate(characters):
         if i < top_x:

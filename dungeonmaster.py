@@ -104,13 +104,9 @@ def run_adventure() -> Quest:
     return completed_quest
 
 def run_long_rest():
-    character_ids = charutils.get_character_ids()
-
-    old_characters = []
+    old_characters = charutils.get_all_characters()
     rested_characters = []
     day_report = []
-    for character_id in character_ids:
-        old_characters.append(charutils.get_character_by_id(character_id[0]))
 
     for old_character in old_characters:
         old_character.current_xp += old_character.roll_for_passive_xp()
