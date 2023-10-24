@@ -170,9 +170,6 @@ def run_long_rest():
         resting_character.current_xp += resting_character.roll_for_passive_xp()
         rested_characters.append(resting_character.take_long_rest())
 
-    #old_characters.sort(key=lambda character: character.id_)
-    #rested_characters.sort(key=lambda character: character.id_)
-
     for i, rested_character in enumerate(rested_characters):
         charutils.update_db_character(charutils.character_to_db_character(rested_character))
         charutils.update_db_gear(rested_character.gear)
@@ -184,7 +181,6 @@ def run_long_rest():
                 personal_report.gearscore_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
             if rested_character.current_xp != old_characters[i].current_xp:
                 personal_report.xp_result = str(rested_character.current_xp) + "/" + str(rested_character.character_class.xp_per_level)
-            debug_print(personal_report)
             day_report.append(personal_report)
     
     if len(day_report) == 0:
