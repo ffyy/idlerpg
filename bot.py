@@ -101,12 +101,14 @@ if DEBUG_MODE == "1":
 
 #TREE COMMANDS
 
-@client.tree.command(name="leaderboard",description="Get top X characters") #make it prettier
-async def leaderboard(interaction: discord.Interaction, top_x: int):
-    if top_x > 0 and top_x <= 10:
-        await interaction.response.send_message("Showing leaderboard")
+@client.tree.command(name="top",description="Get top X characters. Returns top 10 if no argument is given.") #make it prettier
+async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[int]):
+    if top_x and top_x > 0 and top_x <= 10:
         leaderboard_embed = await create_leaderboard_embed(top_x)
-        await interaction.channel.send(embed=leaderboard_embed)
+        await interaction.response.send_message(embed=leaderboard_embed)
+    elif not top_x:
+        leaderboard_embed = await create_leaderboard_embed(10)
+        await interaction.response.send_message(embed=leaderboard_embed)
     else:
         await interaction.response.send_message("You need to enter a number between 0 and 10", ephemeral=True)
 
