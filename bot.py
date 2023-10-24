@@ -189,7 +189,7 @@ async def register(interaction: discord.Interaction, name: str):
         if (charutils.is_name_valid(name)):
             await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
         else:
-            await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 20 characters, must be unique and must include only letters.", ephemeral=True)
+            await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 16 characters, must be unique and must include only letters.", ephemeral=True)
 
 @client.tree.command(name="find", description="Find a character. Returns your own character if no name is given.")
 async def find(interaction: discord.Interaction, name: typing.Optional[str]):
@@ -203,7 +203,11 @@ async def find(interaction: discord.Interaction, name: typing.Optional[str]):
         members_list = client.get_all_members()
         users_list = []
         for member in members_list:
-            users_list.append({"id":member.id, "name":member.display_name})
+            if len(member.display_name) > 10:
+                member_name = member.display_name[:6]+"..."
+            else:
+                member_name = member.display_name
+            users_list.append({"id":member.id, "name":member_name})
         results_report = charutils.character_search(name, users_list)
         results_embed.title = "Stats for character " + name
         results_embed.description = results_report
@@ -235,7 +239,11 @@ async def create_leaderboard_embed(top_x):
     members_list = client.get_all_members()
     users_list = []
     for member in members_list:
-        users_list.append({"id":member.id, "name":member.display_name})
+        if len(member.display_name) > 10:
+            member_name = member.display_name[:6]+"..."
+        else:
+            member_name = member.display_name
+        users_list.append({"id":member.id, "name":member_name})
     leaderboard = charutils.get_leaderboard(top_x, users_list)
     if leaderboard == "":
         leaderboard_embed = discord.Embed(title="There are no characters yet.")

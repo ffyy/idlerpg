@@ -186,12 +186,12 @@ def db_character_to_character(character: CharacterDB) -> Character:
     game_character = Character(character.id_, character.name, character.level, character.current_xp, game_class, game_gear)
     return game_character
 
-def is_name_valid(name) -> str:
+def is_name_valid(name) -> bool:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
     count = int(cur.fetchone()[0])
-    if count > 0 or len(name) > 20 or not name.isalpha():
+    if count > 0 or len(name) > 16 or not name.isascii():
         return False
     else:
         return True
@@ -233,7 +233,7 @@ def get_leaderboard(top_x, users_list) -> str:
     else:
         leaderboard_lists = []
         leaderboard_lists.append(["Name"])
-        leaderboard_lists.append(["Level"])
+        leaderboard_lists.append(["L"])
         leaderboard_lists.append(["Class"])
         leaderboard_lists.append(["GS"])
         leaderboard_lists.append(["XP"])
@@ -264,7 +264,7 @@ def character_search(name, users_list) -> str:
     
     results_lists = []
     results_lists.append(["Name"])
-    results_lists.append(["Level"])
+    results_lists.append(["L"])
     results_lists.append(["Class"])
     results_lists.append(["GS"])
     results_lists.append(["XP"])
