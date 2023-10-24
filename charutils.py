@@ -214,7 +214,7 @@ def level_me_up(player_id):
     else:
         return "You don't even have a character.\nUse /register to register a new character."
     
-def get_leaderboard(top_x, users_list):
+def get_leaderboard(top_x, users_list) -> str:
     characters = []
     top_characters = []
     for character_id in get_character_ids():
@@ -247,3 +247,33 @@ def get_leaderboard(top_x, users_list):
         leaderboard = make_table(leaderboard_lists)
         
         return leaderboard
+    
+def character_search(name, users_list) -> str:
+    if name:
+        character = get_character_by_name(name)
+    else:
+        player_id = int(users_list[0]["id"])
+        character = get_character_by_player_id(player_id)
+    
+    if character is None:
+        return "Character not found"
+    
+    results_lists = []
+    results_lists.append(["Name"])
+    results_lists.append(["Level"])
+    results_lists.append(["Class"])
+    results_lists.append(["GS"])
+    results_lists.append(["XP"])
+    results_lists.append(["Player"])
+    results_lists[0].append(character.name)
+    results_lists[1].append(str(character.level))
+    results_lists[2].append(character.character_class.name)
+    results_lists[3].append(str(character.gear.gearscore))
+    results_lists[4].append(str(character.current_xp) + "/" + str(character.character_class.xp_per_level))
+    player_name = [name["name"] for name in users_list if name["id"] == int(get_discord_id_by_character(character))]
+    if player_name and player_name != "": results_lists[5].append(player_name[0])
+    else: results_lists[5].append("Unknown")
+
+    results = make_table(results_lists)
+
+    return results

@@ -4,6 +4,7 @@ import discord
 import initialsetup
 import charutils
 import dungeonmaster
+import typing
 from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
@@ -163,14 +164,23 @@ async def register(interaction: discord.Interaction, name: str):
         else:
             await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 20 characters, must be unique and must include only letters.", ephemeral=True)
 
-@client.tree.command(name="find", description="Find my character")
-async def find(interaction: discord.Interaction):
-    character = charutils.get_character_by_player_id(interaction.user.id)
-    if character is not None:
-        response = "You have a level " + str(character.level) + " " + character.character_class.name + " called " + character.name + "."
-        await interaction.response.send_message(response, ephemeral=True)
-    else:
-        await interaction.response.send_message("You don't have a character yet.\nUse /register to start.", ephemeral=True)
+@client.tree.command(name="find", description="Find a character. Returns your own character if no name is given.")
+async def find(interaction: discord.Interaction, name: typing.Optional[str]):
+    results_embed = discord.Embed(title="Search results")
+    if name is None:
+        results_report = charutils.character_search(name, [{"id":interaction.user.id, "name":interaction.user.display_name}])
+        results_embed.title = "Your character:"
+        results_embed.description = "```\n" + results_report + "```"
+        await interaction.response.send_message(embed=results_embed)
+    elif name:
+        members_list = client.get_all_members()
+        users_list = []
+        for member in members_list:
+            users_list.append({"id":member.id, "name":member.display_name})
+        results_report = charutils.character_search(name, users_list)
+        results_embed.title = "Stats for character " + name
+        results_embed.description = "```\n" + results_report + "```"
+        await interaction.response.send_message(embed=results_embed)
 
 #LOOP FUNCTIONS
 def create_day_report_embed():
