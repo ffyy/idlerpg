@@ -8,7 +8,7 @@ def make_table(input) -> str:
                 column_widths[i] = len(subitem)
 
     #top line
-    table = "+"
+    table = "```\n+"
     for column_width in column_widths:
         table = "".join([table, "-"*(column_width+2)])
         table = "".join([table, "+"])
@@ -44,6 +44,7 @@ def make_table(input) -> str:
     for column_width in column_widths:
         table = "".join([table, "-"*(column_width+2)])
         table = "".join([table, "+"])
+    table = "".join([table, "```"])
     
     return(table)
 

@@ -180,7 +180,7 @@ async def find(interaction: discord.Interaction, name: typing.Optional[str]):
     if name is None:
         results_report = charutils.character_search(name, [{"id":interaction.user.id, "name":interaction.user.display_name}])
         results_embed.title = "Your character:"
-        results_embed.description = "```\n" + results_report + "```"
+        results_embed.description = results_report
         await interaction.response.send_message(embed=results_embed)
     elif name:
         members_list = client.get_all_members()
@@ -189,13 +189,13 @@ async def find(interaction: discord.Interaction, name: typing.Optional[str]):
             users_list.append({"id":member.id, "name":member.display_name})
         results_report = charutils.character_search(name, users_list)
         results_embed.title = "Stats for character " + name
-        results_embed.description = "```\n" + results_report + "```"
+        results_embed.description = results_report
         await interaction.response.send_message(embed=results_embed)
 
 #LOOP FUNCTIONS
 def create_day_report_embed():
     day_report = dungeonmaster.run_long_rest()
-    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed: ```\n" + day_report + "```")
+    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:" + day_report)
     if day_report == "":
         day_embed.description="After sitting down to rest they found out that they weren't all that tired, and just kept going without leveling anything up."
         return day_embed
@@ -211,7 +211,7 @@ def create_adventure_embed():
 
 def create_pvp_embed():
     pvp_encounter = dungeonmaster.run_pvp_encounter()
-    pvp_embed = discord.Embed(title="Heroes fighting heroes!", type="rich", description=pvp_encounter[0] + "```\n" + pvp_encounter[1] + "```") 
+    pvp_embed = discord.Embed(title="Heroes fighting heroes!", type="rich", description=pvp_encounter[0] + pvp_encounter[1]) 
     return pvp_embed
 
 async def create_leaderboard_embed(top_x):
@@ -223,7 +223,7 @@ async def create_leaderboard_embed(top_x):
     if leaderboard == "":
         leaderboard_embed = discord.Embed(title="There are no characters yet.")
         return leaderboard_embed
-    leaderboard_embed = discord.Embed(title="Top " + str(top_x) + " characters in this world:", description="```\n" + leaderboard + "```")
+    leaderboard_embed = discord.Embed(title="Top " + str(top_x) + " characters in this world:", description=leaderboard)
     return leaderboard_embed
        
 print("starting bot")

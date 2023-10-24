@@ -98,15 +98,14 @@ def run_adventure() -> Quest:
     
     quest_table = make_table(completed_quest_lists)
 
-    completed_quest.quest_journal = "\n```\n".join([completed_quest.quest_journal, quest_table])
-    completed_quest.quest_journal = "".join([completed_quest.quest_journal, "```"])
+    completed_quest.quest_journal = "".join([completed_quest.quest_journal, quest_table])
 
     return completed_quest
 
 def run_pvp_encounter():
     all_characters = charutils.get_all_characters()
     if len(all_characters) < 6:
-        return "I tried to incite violence, but there weren't enough characters around for PvP."
+        return ["I tried to incite violence, but there weren't enough characters around for PvP.",""]
     
     all_characters.sort(key=lambda character:character.level)
     i_ganker = randint(0, len(all_characters)//2) #ganker index
