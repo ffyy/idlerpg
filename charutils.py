@@ -191,7 +191,7 @@ def is_name_valid(name) -> bool:
     cur = db.cursor()
     cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
     count = int(cur.fetchone()[0])
-    if count > 0 or len(name) > 13 or not name.isascii():
+    if count > 0 or len(name) > 12 or not name.isascii():
         return False
     else:
         return True
