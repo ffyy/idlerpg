@@ -119,11 +119,13 @@ class DayReport:
             self,
             character_name,
             level_result,
-            gearscore_result
+            gearscore_result,
+            xp_result
     ):
         self.character_name = character_name
         self.level_result = level_result
         self.gearscore_result = gearscore_result
+        self.xp_result = xp_result
 
 class LeaderboardEntry:
     def __init__(

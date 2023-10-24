@@ -163,22 +163,28 @@ def run_long_rest():
     rested_characters = []
     day_report = []
 
+    old_characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
     for old_character in old_characters:
         old_character.current_xp += old_character.roll_for_passive_xp()
-        rested_characters.append(old_character.take_long_rest())
+        resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.current_xp, old_character.character_class, old_character.gear)
+        resting_character.current_xp += resting_character.roll_for_passive_xp()
+        rested_characters.append(resting_character.take_long_rest())
 
-    old_characters.sort(key=lambda character: character.id_)
-    rested_characters.sort(key=lambda character: character.id_)
+    #old_characters.sort(key=lambda character: character.id_)
+    #rested_characters.sort(key=lambda character: character.id_)
 
     for i, rested_character in enumerate(rested_characters):
         charutils.update_db_character(charutils.character_to_db_character(rested_character))
         charutils.update_db_gear(rested_character.gear)
-        if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore:
-            personal_report = DayReport(rested_character.name, rested_character.level, rested_character.gear.gearscore)
+        if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore or rested_character.current_xp != old_characters[i].current_xp:
+            personal_report = DayReport(rested_character.name, rested_character.level, rested_character.gear.gearscore, str(rested_character.current_xp) + "/" + str(rested_character.character_class.xp_per_level))
             if rested_character.level != old_characters[i].level:
                 personal_report.level_result = str(old_characters[i].level) + "->" + str(rested_character.level)
             if rested_character.gear.gearscore != old_characters[i].gear.gearscore:
                 personal_report.gearscore_result = str(old_characters[i].gear.gearscore) + "->" + str(rested_character.gear.gearscore)
+            if rested_character.current_xp != old_characters[i].current_xp:
+                personal_report.xp_result = str(rested_character.current_xp) + "/" + str(rested_character.character_class.xp_per_level)
+            debug_print(personal_report)
             day_report.append(personal_report)
     
     if len(day_report) == 0:
@@ -188,11 +194,13 @@ def run_long_rest():
         table_lists.append(["Character"])
         table_lists.append(["Level"])
         table_lists.append(["Gearscore"])
+        table_lists.append(["XP"])
 
         for character in day_report:
             table_lists[0].append(character.character_name)
             table_lists[1].append(str(character.level_result))
             table_lists[2].append(str(character.gearscore_result))
+            table_lists[3].append(str(character.xp_result))
 
         string_day_report = make_table(table_lists)
 

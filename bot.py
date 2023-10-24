@@ -216,7 +216,7 @@ async def find(interaction: discord.Interaction, name: typing.Optional[str]):
 #LOOP FUNCTIONS
 def create_day_report_embed():
     day_report = dungeonmaster.run_long_rest()
-    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the rest, they leveled up and attuned new magic items. As a result, the following stats changed:" + day_report)
+    day_embed = discord.Embed(title="The adventurers took a long rest.", type="rich", description="During the night, they thought about experiences they had had during the day and attuned new magic items. Character statistics in the morning:" + day_report)
     if day_report == "":
         day_embed.description="After sitting down to rest they found out that they weren't all that tired, and just kept going without leveling anything up."
         return day_embed
