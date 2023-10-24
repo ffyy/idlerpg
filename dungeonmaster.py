@@ -6,6 +6,7 @@ from helpers import *
 QUEST_HOOKS = open("content/quests.txt").read().splitlines()
 SUCCESS_DESCRIPTIONS = open("content/successes.txt").read().splitlines()
 FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
+ITEMS = open("content/items.txt").read().splitlines()
 
 def give_rewards(quest: Quest):
     if "experience" in quest.quest_type:
@@ -34,18 +35,23 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.outcome = 1
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Luckily,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
-        if "experience" in dm_quest.quest_type:
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "This was a very valuable experience for everyone."])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "XP reward:"])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
-            completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "."])
         if "loot" in dm_quest.quest_type:
             carry_index = completed_quest.party_rolls.index(max(completed_quest.party_rolls))
+            item_name = random.choice(ITEMS)
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, completed_quest.party[carry_index].name])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "found a magic item."])
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "also found"])
+            if item_name[0] in "aeoiu":
+                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "an"])
+            else:
+                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "a"])
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, item_name])
+            completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "!"])
+        if "experience" in dm_quest.quest_type:
+            completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "XP reward:"])
+            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])        
-        completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "**Success!**"])
+        completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Success!**"])
         give_rewards(completed_quest)
     else:
         completed_quest.outcome = 0
