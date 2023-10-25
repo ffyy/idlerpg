@@ -17,8 +17,8 @@ def do():
 
     character_classes = [(1, "Thief", 1, 100, 0, 10000, "Trust in your luck (1d100)"),
                          (2, "Fighter", 5, 20, 0, 10000, "Solid in any situation (5d20)"),
-                         (3, "Hobbit", 5, 10, 0, 8000, "Bad at everything, but starts with a magic ring (5d10)"),
-                         (4, "Elf", 5, 20, 20, 20000, "Just better at everything, but levels slowly (5d20+20)")]
+                         (3, "Hobbit", 5, 10, 0, 6000, "Bad at everything, but starts with a magic ring (5d10)"),
+                         (4, "Elf", 5, 20, 20, 16000, "Just better at everything, but levels slowly (5d20+20)")]
 
     print("creating new tables")
     cur = db.cursor()
