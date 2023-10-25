@@ -4,11 +4,12 @@ from rpgobjects import *
 from helpers import *
 
 QUEST_HOOKS = open("content/quests.txt").read().splitlines()
+PERSONAL_QUESTS = open("content/personalquests.txt").read().splitlines()
 SUCCESS_DESCRIPTIONS = open("content/successes.txt").read().splitlines()
 FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
 
-def give_rewards(quest: Quest):
+def give_quest_rewards(quest: Quest):
     if "experience" in quest.quest_type:
         for adventurer in quest.party:
             adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
@@ -57,7 +58,7 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
         completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Success!**"])
-        give_rewards(completed_quest)
+        give_quest_rewards(completed_quest)
     else:
         for character in completed_quest.party:
             character_statistics = charutils.get_character_statistics(character)
@@ -177,6 +178,20 @@ def run_pvp_encounter():
     pvp_journal.append(make_table(pvp_report_lists))
 
     return pvp_journal
+
+def run_personal_quest():
+    hero = random.choice(charutils.get_all_characters())
+    personal_quest_hook = random.choice([line for line in PERSONAL_QUESTS if line[0] == str(hero.character_class.id_)])[2:]
+    xp_reward = randint(500, 2000)
+    personal_quest_journal = ""
+    personal_quest_journal = "".join([personal_quest_journal, hero.name])
+    personal_quest_journal = "".join([personal_quest_journal, personal_quest_hook])
+    personal_quest_journal = ", ".join([personal_quest_journal, "which earned them"])
+    personal_quest_journal = " ".join([personal_quest_journal, str(xp_reward)])
+    personal_quest_journal = " ".join([personal_quest_journal, "xp."])
+    hero.current_xp += xp_reward
+    charutils.update_db_character(charutils.character_to_db_character(hero))
+    return personal_quest_journal
 
 def run_long_rest():
     old_characters = charutils.get_all_characters()

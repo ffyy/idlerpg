@@ -1,5 +1,6 @@
 from asyncio import sleep
 import os
+import datetime
 import discord
 import initialsetup
 import charutils
@@ -35,14 +36,15 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
+        self.run_personal_quests.start()
         self.run_adventures.start()
-        self.run_long_rests.start()
         self.run_pvp_encounters.start()
-        print("loops started")
+        self.run_long_rests.start()
+        print(str(datetime.datetime.now()) + " - loops started")
 
     @tasks.loop(minutes=(TIMESCALE))
     async def run_adventures(self):
-        print("running adventure " + str(self.run_adventures.current_loop))
+        print(str(datetime.datetime.now()) + " - running adventure " + str(self.run_adventures.current_loop))
         if self.run_adventures.current_loop == 0:
             self.run_adventures.change_interval(minutes=TIMESCALE)
         channel = self.get_channel(CHANNEL.id)
@@ -61,7 +63,7 @@ class RpgEngine(discord.Client):
 
     @tasks.loop(minutes=TIMESCALE)
     async def run_long_rests(self):
-        print("running rest " + str(self.run_long_rests.current_loop))
+        print(str(datetime.datetime.now()) + " - running rest " + str(self.run_long_rests.current_loop))
         channel = self.get_channel(CHANNEL.id)
         day_embed = create_day_report_embed()
         await channel.send(content=day_embed.title + day_embed.description)
@@ -78,7 +80,7 @@ class RpgEngine(discord.Client):
 
     @tasks.loop(minutes=TIMESCALE)
     async def run_pvp_encounters(self):
-        print("running pvp " + str(self.run_pvp_encounters.current_loop))
+        print(str(datetime.datetime.now()) + " - running pvp " + str(self.run_pvp_encounters.current_loop))
         channel = self.get_channel(CHANNEL.id)
         pvp_embed = create_pvp_embed()
         await channel.send(content=pvp_embed.title + pvp_embed.description)
@@ -93,6 +95,23 @@ class RpgEngine(discord.Client):
         else:
             await self.wait_until_ready()
 
+    @tasks.loop(minutes=TIMESCALE)
+    async def run_personal_quests(self):
+        print(str(datetime.datetime.now()) + " - running personal quest " + str(self.run_personal_quests.current_loop))
+        channel = self.get_channel(CHANNEL.id)
+        personal_quest_content = dungeonmaster.run_personal_quest()
+        await channel.send(content="**A hero did something!**\n" + personal_quest_content)
+
+    @run_personal_quests.before_loop
+    async def before_personal_quest(self):
+        if self.run_personal_quests.current_loop == 0:
+            sleep_time = int((TIMESCALE*60)/3) #timescale in seconds
+            print(str(self.run_personal_quests) + " waiting until start: " + str(sleep_time))
+            await sleep(sleep_time)
+            await self.wait_until_ready()
+        else:
+            await self.wait_until_ready()
+
 
 intents = discord.Intents.default()
 intents.members = True
@@ -101,6 +120,14 @@ client = RpgEngine(intents=intents)
 
 # DEBUG COMMANDS
 if DEBUG_MODE == "1":
+    @client.tree.command(name="personalquest",description="Run a personal quest") #testing command
+    async def personalquest(interaction: discord.Interaction):
+        if interaction.user.id == ADMIN_ID:
+            quest_journal = dungeonmaster.run_personal_quest()
+            await interaction.response.send_message(content="**A hero did something!**\n" + quest_journal, ephemeral=True)
+        else:
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
+
     @client.tree.command(name="adventure",description="Run an adventure") #testing command
     async def adventure(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
