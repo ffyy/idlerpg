@@ -32,7 +32,7 @@ class CharacterClass:
 
 class CharacterDB:
     def __init__(
-            self, 
+            self,
             id_,
             name,
             level,
@@ -49,7 +49,7 @@ class CharacterDB:
 
 class Character:
     def __init__(
-            self, 
+            self,
             id_,
             name,
             level,
@@ -70,7 +70,7 @@ class Character:
             this_roll = randint(1, self.character_class.die_size)
             result += this_roll
         return result
-    
+
     def roll_for_passive_xp(self) -> int:
         BASE_XP = 3600 #1 xp per second with default timescale 60
         xp_multiplier = self.roll_dice()
@@ -139,3 +139,22 @@ class LeaderboardEntry:
         self.level = level
         self.gearscore = gearscore
         self.player_id = player_id
+
+class CharacterStatistics:
+    def __init__(
+            self,
+            character_id,
+            quests_attempted,
+            quests_won,
+            ganks_attempted,
+            ganks_won,
+            defences_attempted,
+            defences_won
+    ):
+        self.character_id = character_id
+        self.quests_attempted = quests_attempted
+        self.quests_won = quests_won
+        self.ganks_attempted = ganks_attempted
+        self.ganks_won = ganks_won
+        self.defences_attempted = defences_attempted
+        self.defences_won = defences_won

@@ -21,7 +21,7 @@ def give_rewards(quest: Quest):
 
 def run_quest(dm_quest: Quest) -> Quest:
     QUEST_ITEM_THRESHOLD = 0.8
-    
+
     completed_quest = dm_quest
     for adventurer in dm_quest.party:
         adventurer_roll = adventurer.roll_dice() + adventurer.gear.gearscore
@@ -32,6 +32,11 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_type.append("loot")
 
     if sum(completed_quest.party_rolls) > dm_quest.quest_difficulty:
+        for character in completed_quest.party:
+            character_statistics = charutils.get_character_statistics(character)
+            character_statistics.quests_attempted += 1
+            character_statistics.quests_won += 1
+            charutils.update_character_statistics(character_statistics)
         completed_quest.outcome = 1
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Luckily,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
@@ -50,22 +55,26 @@ def run_quest(dm_quest: Quest) -> Quest:
             completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "XP reward:"])
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
-        completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])        
+        completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
         completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Success!**"])
         give_rewards(completed_quest)
     else:
+        for character in completed_quest.party:
+            character_statistics = charutils.get_character_statistics(character)
+            character_statistics.quests_attempted += 1
+            charutils.update_character_statistics(character_statistics)
         completed_quest.outcome = 0
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Unfortunately,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
-        completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])  
+        completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
         completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Failure!**"])
 
     return completed_quest
 
 def run_adventure() -> Quest:
     character_ids = charutils.get_character_ids()
-    
+
     QUEST_TYPES = ["experience", "loot"]
     quest_type = ["experience"]
 
@@ -74,34 +83,34 @@ def run_adventure() -> Quest:
     quest = Quest(quest_type, [], [], 0, quest_hook, 0)
 
     if not character_ids:
-        return quest 
-    
+        return quest
+
     if(len(character_ids)) == 1:
         quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
     else:
         party_size = random.randint(2,(max(2, (len(character_ids)//2))))
         for character_id in random.sample(character_ids, party_size):
-            quest.party.append(charutils.get_character_by_id(character_id[0]))   
+            quest.party.append(charutils.get_character_by_id(character_id[0]))
 
     difficulty = random.randint(1,100*len(quest.party))
     quest.quest_difficulty = difficulty
 
     completed_quest = run_quest(quest)
-    
+
     completed_quest_lists = []
     completed_quest_lists.append(["Hero"])
     completed_quest_lists.append(["Class"])
     completed_quest_lists.append(["Level"])
     completed_quest_lists.append(["GS"])
     completed_quest_lists.append(["Roll"])
-    
+
     for i,hero in enumerate(completed_quest.party):
         completed_quest_lists[0].append(hero.name)
         completed_quest_lists[1].append(hero.character_class.name)
         completed_quest_lists[2].append(str(hero.level))
         completed_quest_lists[3].append(str(hero.gear.gearscore))
         completed_quest_lists[4].append(str(completed_quest.party_rolls[i]))
-    
+
     quest_table = make_table(completed_quest_lists)
 
     completed_quest.quest_journal = "".join([completed_quest.quest_journal, quest_table])
@@ -112,13 +121,20 @@ def run_pvp_encounter():
     all_characters = charutils.get_all_characters()
     if len(all_characters) < 6:
         return ["I tried to incite violence, but there weren't enough characters around for PvP.",""]
-    
+
     all_characters.sort(key=lambda character:character.level)
     i_ganker = randint(0, len(all_characters)//2) #ganker index
     pvp_characters = []
     pvp_characters.append(all_characters[i_ganker])
     del all_characters[0:i_ganker+1]
     pvp_characters.append(random.choice(all_characters))
+
+    ganker_statistics = charutils.get_character_statistics(pvp_characters[0])
+    defender_statistics = charutils.get_character_statistics(pvp_characters[1])
+    ganker_statistics.ganks_attempted += 1
+    defender_statistics.defences_attempted += 1
+    charutils.update_character_statistics(ganker_statistics)
+    charutils.update_character_statistics(defender_statistics)
 
     pvp_rolls = []
     for character in pvp_characters:
@@ -127,15 +143,19 @@ def run_pvp_encounter():
     pvp_journal = [pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."]
     xp_reward = max(1, pvp_characters[1].level - pvp_characters[0].level) * 2000
     if pvp_rolls[0] >= pvp_rolls[1]:
+        ganker_statistics.ganks_won += 1
+        charutils.update_character_statistics(ganker_statistics)
         pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
         pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
         pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
         pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
-        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])        
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
         pvp_journal[0] = ": ".join([pvp_journal[0], str(xp_reward)])
         pvp_characters[0].current_xp += xp_reward
         charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
     elif pvp_rolls[0] < pvp_rolls[1]:
+        defender_statistics.defences_won += 1
+        charutils.update_character_statistics(defender_statistics)
         pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
         pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
         pvp_journal[0] = " - ".join([pvp_journal[0], "**Failure!**"])
@@ -182,7 +202,7 @@ def run_long_rest():
             if rested_character.current_xp != old_characters[i].current_xp:
                 personal_report.xp_result = str(rested_character.current_xp) + "/" + str(rested_character.character_class.xp_per_level)
             day_report.append(personal_report)
-    
+
     if len(day_report) == 0:
         return ""
     else:

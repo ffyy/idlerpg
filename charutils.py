@@ -24,28 +24,45 @@ def update_db_gear(gear: Gear):
     db.commit()
     cur.close
 
+def get_character_statistics(character: Character) -> CharacterStatistics:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM statistics WHERE character_id = ?", (character.id_,))
+    db_stats = cur.fetchone()
+    cur.close()
+    stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6])
+    return stats
+
+def update_character_statistics(stats: CharacterStatistics):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("UPDATE statistics SET quests_attempted = ?, quests_won = ?, ganks_attempted = ?, ganks_won = ?, defences_attempted = ?, defences_won = ? WHERE character_id = ?", (stats.quests_attempted, stats.quests_won, stats.ganks_attempted, stats.ganks_won, stats.defences_attempted, stats.defences_won, stats.character_id))
+    db.commit()
+    cur.close
+
 def register_character(name, class_id, player_id):
     character = CharacterDB(None, name, 0, 0, class_id, None)
     class_name = get_class(class_id).name
-    
+
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     try:
         if character.class_id == 3: #hobbits get a magic ring
             cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (20,0)")
-        else: 
+        else:
             cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (0,0)")
         character.gear_id = cur.lastrowid
         cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
+        cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won) VALUES (?, ?, ?, ?, ?)", (character.id_, 0, 0, 0, 0))
         db.commit()
         cur.close()
         return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."
     except:
         traceback.print_exc()
         return "Something went wrong"
-    
+
 def delete_character(player_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -53,6 +70,7 @@ def delete_character(player_id):
     cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
     cur.execute("DELETE FROM gear WHERE id_ = ?", (character.gear.id_,))
     cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
+    cur.execute("DELETE FROM statistics WHERE character_id = ?", (character.id_,))
     db.commit()
     cur.close()
     response = "Deleted character " + character.name
@@ -76,7 +94,7 @@ def unregister_player(player_id):
         return "Deleted you & your character!"
     except:
         traceback.print_exc()
-        return "Something went wrong."    
+        return "Something went wrong."
 
 def get_character_by_name(name) -> Character:
     db = sqlite3.connect(DB_PATH)
@@ -86,7 +104,7 @@ def get_character_by_name(name) -> Character:
     cur.close()
     if db_character is None:
         return None
-    else:    
+    else:
         data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
         character = db_character_to_character(data_character)
         return character
@@ -99,11 +117,11 @@ def get_character_by_id(id_) -> Character:
     cur.close()
     if db_character is None:
         return None
-    else:    
+    else:
         data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
         character = db_character_to_character(data_character)
         return character
-    
+
 def get_discord_id_by_character(character):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -170,7 +188,7 @@ def get_gear(id) -> Gear:
     cur.execute("SELECT * FROM gear WHERE id_ = ?", (id,))
     db_gear = cur.fetchone()
     cur.close()
-    if db_gear is not None: 
+    if db_gear is not None:
         gear = Gear(db_gear[0], db_gear[1], db_gear[2])
         return gear
     else:
@@ -219,7 +237,7 @@ def level_me_up(player_id):
         return "Character " + character.name + " is now level " + str(character.level)
     else:
         return "You don't even have a character.\nUse /register to register a new character."
-    
+
 def get_leaderboard(top_x, users_list) -> str:
     characters = get_all_characters()
     top_characters = []
@@ -249,19 +267,19 @@ def get_leaderboard(top_x, users_list) -> str:
             else: leaderboard_lists[5].append("Unknown")
 
         leaderboard = make_table(leaderboard_lists)
-        
+
         return leaderboard
-    
+
 def character_search(name, users_list) -> str:
     if name:
         character = get_character_by_name(name)
     else:
         player_id = int(users_list[0]["id"])
         character = get_character_by_player_id(player_id)
-    
+
     if character is None:
         return "Character not found"
-    
+
     results_lists = []
     results_lists.append(["Name"])
     results_lists.append(["L"])
