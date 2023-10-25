@@ -7,6 +7,7 @@ QUEST_HOOKS = open("content/quests.txt").read().splitlines()
 PERSONAL_QUESTS = open("content/personalquests.txt").read().splitlines()
 SUCCESS_DESCRIPTIONS = open("content/successes.txt").read().splitlines()
 FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
+PVP_OUTCOMES = open("content/pvpoutcomes.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
 
 def give_quest_rewards(quest: Quest):
@@ -146,7 +147,10 @@ def run_pvp_encounter():
     if pvp_rolls[0] >= pvp_rolls[1]:
         ganker_statistics.ganks_won += 1
         charutils.update_character_statistics(ganker_statistics)
-        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = " ".join([pvp_journal[0], "Fortunately,"])
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+        pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
+        pvp_journal[0] = ".\n".join([pvp_journal[0], str(pvp_rolls[0])])
         pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
         pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
         pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
@@ -157,7 +161,10 @@ def run_pvp_encounter():
     elif pvp_rolls[0] < pvp_rolls[1]:
         defender_statistics.defences_won += 1
         charutils.update_character_statistics(defender_statistics)
-        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = " ".join([pvp_journal[0], "Sadly,"])
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+        pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
+        pvp_journal[0] = ".\n".join([pvp_journal[0], str(pvp_rolls[0])])
         pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
         pvp_journal[0] = " - ".join([pvp_journal[0], "**Failure!**"])
 
@@ -185,6 +192,8 @@ def run_personal_quest():
     xp_reward = randint(500, 2000)
     personal_quest_journal = ""
     personal_quest_journal = "".join([personal_quest_journal, hero.name])
+    personal_quest_journal = " ".join([personal_quest_journal, "the"])
+    personal_quest_journal = " ".join([personal_quest_journal, hero.character_class.name])
     personal_quest_journal = "".join([personal_quest_journal, personal_quest_hook])
     personal_quest_journal = ", ".join([personal_quest_journal, "which earned them"])
     personal_quest_journal = " ".join([personal_quest_journal, str(xp_reward)])
