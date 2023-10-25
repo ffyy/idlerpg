@@ -124,7 +124,7 @@ if DEBUG_MODE == "1":
     async def personalquest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
             quest_journal = dungeonmaster.run_personal_quest()
-            await interaction.response.send_message(content="**A hero did something!**\n" + quest_journal, ephemeral=True)
+            await interaction.response.send_message(content="**A hero did something!**\n" + quest_journal)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
