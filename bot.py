@@ -243,6 +243,23 @@ async def find(interaction: discord.Interaction, name: typing.Optional[str]):
         results_embed.description = results_report
         await interaction.response.send_message(content=results_embed.title + results_embed.description)
 
+@client.tree.command(name="changename", description="Rename your character")
+async def changename(interaction: discord.Interaction, new_name: str):
+    character = charutils.get_character_by_player_id(interaction.user.id)
+    old_name = character.name
+    if old_name == new_name:
+        await interaction.response.send_message(content="That is already your name.", ephemeral=True)
+    elif character is None:
+        await interaction.response.send_message(content="You don't have a character.\nUse /register to register a new character.", ephemeral=True)
+    elif not charutils.is_name_valid(new_name):
+        await interaction.response.send_message(content="The name [" + new_name + "] is not valid.\nNames can be up to 12 characters, must be unique and must include only letters.", ephemeral=True)
+    elif (character is not None) and charutils.is_name_valid(new_name):
+        character.name = new_name
+        charutils.update_db_character(charutils.character_to_db_character(character))
+        await interaction.response.send_message(content="The character formerly known as " + old_name + " is now called " + new_name + ".")
+    else:
+        await interaction.response.send_message(content="Something went wrong", ephemeral=True)
+
 #LOOP FUNCTIONS
 def create_day_report_embed():
     day_report = dungeonmaster.run_long_rest()
