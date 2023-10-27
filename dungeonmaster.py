@@ -50,7 +50,7 @@ def run_quest(dm_quest: Quest) -> Quest:
                 charutils.update_db_character(charutils.character_to_db_character(character))
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Thanks to"])
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, healer.name])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "everyone was healed for"])
+            completed_quest.quest_journal = ', '.join([completed_quest.quest_journal, "everyone was healed for"])
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(hp_gain)])
             completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "HP."])
         if "loot" in dm_quest.quest_type:
