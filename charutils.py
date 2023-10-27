@@ -55,7 +55,7 @@ def register_character(name, class_id, player_id):
         cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
-        cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won) VALUES (?, ?, ?, ?, ?)", (character.id_, 0, 0, 0, 0))
+        cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, personal_quests) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (character.id_, 0, 0, 0, 0, 0, 0, 0))
         db.commit()
         cur.close()
         return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."

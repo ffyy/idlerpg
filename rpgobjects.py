@@ -149,7 +149,8 @@ class CharacterStatistics:
             ganks_attempted,
             ganks_won,
             defences_attempted,
-            defences_won
+            defences_won,
+            personal_quests
     ):
         self.character_id = character_id
         self.quests_attempted = quests_attempted
@@ -158,3 +159,4 @@ class CharacterStatistics:
         self.ganks_won = ganks_won
         self.defences_attempted = defences_attempted
         self.defences_won = defences_won
+        self.personal_quests = personal_quests
