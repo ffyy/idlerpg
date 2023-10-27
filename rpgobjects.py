@@ -20,6 +20,7 @@ class CharacterClass:
             die_size,
             bonus,
             xp_per_level,
+            max_hp,
             description
     ):
         self.id_ = id_
@@ -28,6 +29,7 @@ class CharacterClass:
         self.die_size = die_size
         self.bonus = bonus
         self.xp_per_level = xp_per_level
+        self.max_hp = max_hp
         self.description = description
 
 class CharacterDB:
@@ -37,6 +39,7 @@ class CharacterDB:
             name,
             level,
             current_xp,
+            current_hp,
             class_id,
             gear_id
             ):
@@ -44,6 +47,7 @@ class CharacterDB:
         self.name = name
         self.level = level
         self.current_xp = current_xp
+        self.current_hp = current_hp
         self.class_id = class_id
         self.gear_id = gear_id
 
@@ -54,6 +58,7 @@ class Character:
             name,
             level,
             current_xp,
+            current_hp,
             character_class: CharacterClass,
             gear: Gear,
             ):
@@ -61,6 +66,7 @@ class Character:
         self.name = name
         self.level = level
         self.current_xp = current_xp
+        self.current_hp = current_hp
         self.character_class = character_class
         self.gear = gear
 

@@ -13,7 +13,7 @@ DB_PATH = os.getenv("DB_PATH")
 def update_db_character(character: CharacterDB):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, class_id = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.class_id, character.gear_id, character.id_))
+    cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, current_hp = ?, class_id = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.current_hp, character.class_id, character.gear_id, character.id_))
     db.commit()
     cur.close()
 
@@ -41,8 +41,9 @@ def update_character_statistics(stats: CharacterStatistics):
     cur.close
 
 def register_character(name, class_id, player_id):
-    character = CharacterDB(None, name, 0, 0, class_id, None)
-    class_name = get_class(class_id).name
+    character = CharacterDB(None, name, 0, 0, 0, class_id, None)
+    character_class = get_class(class_id)
+    class_name = character_class.name
 
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -52,7 +53,7 @@ def register_character(name, class_id, player_id):
         else:
             cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (0,0)")
         character.gear_id = cur.lastrowid
-        cur.execute("INSERT INTO character(name,level,current_xp,class_id,gear_id) VALUES (?,?,?,?,?)", (character.name, character.level, character.current_xp, character.class_id, character.gear_id))
+        cur.execute("INSERT INTO character(name,level,current_xp,current_hp,class_id,gear_id) VALUES (?,?,?,?,?,?)", (character.name, character.level, character.current_xp, character_class.max_hp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
         cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, personal_quests) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (character.id_, 0, 0, 0, 0, 0, 0, 0))
@@ -67,10 +68,9 @@ def delete_character(player_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     character = get_character_by_player_id(player_id)
+    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id) VALUES (?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id))
     cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
-    cur.execute("DELETE FROM gear WHERE id_ = ?", (character.gear.id_,))
     cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
-    cur.execute("DELETE FROM statistics WHERE character_id = ?", (character.id_,))
     db.commit()
     cur.close()
     response = "Deleted character " + character.name
@@ -118,7 +118,7 @@ def get_character_by_id(id_) -> Character:
     if db_character is None:
         return None
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6])
         character = db_character_to_character(data_character)
         return character
 
@@ -144,7 +144,7 @@ def get_character_by_player_id(player_id) -> Character:
         db_character = cur.fetchone()
     cur.close()
     if db_character is not None:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6])
         character = db_character_to_character(data_character)
         return character
     else:
@@ -169,7 +169,7 @@ def get_class(id) -> CharacterClass:
     cur.execute("SELECT * FROM class WHERE id_ = ?", (id,))
     db_class = cur.fetchone()
     cur.close()
-    character_class = CharacterClass(db_class[0], db_class[1], db_class[2], db_class[3], db_class[4], db_class[5], db_class[6])
+    character_class = CharacterClass(db_class[0], db_class[1], db_class[2], db_class[3], db_class[4], db_class[5], db_class[6], db_class[7])
     return character_class
 
 def get_all_classes() -> list[CharacterClass]:
@@ -179,7 +179,7 @@ def get_all_classes() -> list[CharacterClass]:
     cur.execute("SELECT * FROM class")
     db_classes = cur.fetchall()
     for db_class in db_classes:
-        classes.append(CharacterClass(db_class[0], db_class[1], db_class[2], db_class[3], db_class[4], db_class[5], db_class[6]))
+        classes.append(CharacterClass(db_class[0], db_class[1], db_class[2], db_class[3], db_class[4], db_class[5], db_class[6], db_class[7]))
     return classes
 
 def get_gear(id) -> Gear:
@@ -195,13 +195,13 @@ def get_gear(id) -> Gear:
         return None
 
 def character_to_db_character(character: Character) -> CharacterDB:
-    db_character = CharacterDB(character.id_, character.name, character.level, character.current_xp, character.character_class.id_, character.gear.id_)
+    db_character = CharacterDB(character.id_, character.name, character.level, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_)
     return db_character
 
 def db_character_to_character(character: CharacterDB) -> Character:
     game_class = get_class(character.class_id)
     game_gear = get_gear(character.gear_id)
-    game_character = Character(character.id_, character.name, character.level, character.current_xp, game_class, game_gear)
+    game_character = Character(character.id_, character.name, character.level, character.current_xp, character.current_hp, game_class, game_gear)
     return game_character
 
 def is_name_valid(name) -> bool:
