@@ -1,6 +1,8 @@
+import datetime
 import os
 import sqlite3
 import traceback
+import time
 from rpgobjects import *
 from helpers import *
 from dotenv import load_dotenv
@@ -30,13 +32,13 @@ def get_character_statistics(character: Character) -> CharacterStatistics:
     cur.execute("SELECT * FROM statistics WHERE character_id = ?", (character.id_,))
     db_stats = cur.fetchone()
     cur.close()
-    stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6])
+    stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6], db_stats[7], db_stats[8])
     return stats
 
 def update_character_statistics(stats: CharacterStatistics):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("UPDATE statistics SET quests_attempted = ?, quests_won = ?, ganks_attempted = ?, ganks_won = ?, defences_attempted = ?, defences_won = ? WHERE character_id = ?", (stats.quests_attempted, stats.quests_won, stats.ganks_attempted, stats.ganks_won, stats.defences_attempted, stats.defences_won, stats.character_id))
+    cur.execute("UPDATE statistics SET quests_attempted = ?, quests_won = ?, ganks_attempted = ?, ganks_won = ?, defences_attempted = ?, defences_won = ?, personal_quests = ? WHERE character_id = ?", (stats.quests_attempted, stats.quests_won, stats.ganks_attempted, stats.ganks_won, stats.defences_attempted, stats.defences_won, stats.personal_quests, stats.character_id))
     db.commit()
     cur.close
 
@@ -56,7 +58,7 @@ def register_character(name, class_id, player_id):
         cur.execute("INSERT INTO character(name,level,current_xp,current_hp,class_id,gear_id) VALUES (?,?,?,?,?,?)", (character.name, character.level, character.current_xp, character_class.max_hp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
-        cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, personal_quests) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (character.id_, 0, 0, 0, 0, 0, 0, 0))
+        cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, personal_quests, create_timestamp) VALUES (?,?,?,?,?,?,?,?,?)", (character.id_, 0, 0, 0, 0, 0, 0, 0, int(time.time())))
         db.commit()
         cur.close()
         return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."
@@ -296,6 +298,24 @@ def character_search(name, users_list) -> str:
     if player_name and player_name != "": results_lists[5].append(player_name[0])
     else: results_lists[5].append("Unknown")
 
-    results = make_table(results_lists)
+    find_results = make_table(results_lists)
+
+    stats = get_character_statistics(character)
+
+    statistics_lists = []
+    statistics_lists.append(["Quests"])
+    statistics_lists.append(["Ganks"])
+    statistics_lists.append(["Defences"])
+    statistics_lists.append(["P. Quests"])
+    statistics_lists.append(["Created"])
+    statistics_lists[0].append(str(stats.quests_won) + "/" + str(stats.quests_attempted))
+    statistics_lists[1].append(str(stats.ganks_won) + "/" + str(stats.ganks_attempted))
+    statistics_lists[2].append(str(stats.defences_won) + "/" + str(stats.defences_won))
+    statistics_lists[3].append(str(stats.personal_quests))
+    statistics_lists[4].append(str(datetime.datetime.fromtimestamp(stats.create_timestamp)))
+
+    stats_results = make_table(statistics_lists)
+
+    results = find_results + stats_results
 
     return results
