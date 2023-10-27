@@ -17,13 +17,15 @@ def do():
 
     character_classes = [(1, "Thief", 1, 100, 0, 10000, 100, "Trust in your luck (1d100)"),
                          (2, "Fighter", 5, 20, 0, 10000, 100, "Solid in any situation (5d20)"),
-                         (3, "Hobbit", 5, 10, 0, 6000, 100, "Bad at everything, but starts with a magic ring (5d10)"),
-                         (4, "Elf", 5, 20, 20, 16000, 100, "Just better at everything, but levels slowly (5d20+20)")]
+                         (3, "Hobbit", 5, 10, 0, 7000, 100, "Bad at everything, but starts with a magic ring (5d10)"),
+                         (4, "Elf", 5, 20, 20, 18000, 100, "Just better at everything, but levels slowly (5d20+20)"),
+                         (5, "Magic User", 1, 100, 10, 10000, 80, "Powerful but squishy (1d100+10)"),
+                         (6, "Cleric", 5, 20, 0, 10000, 80, "Can heal the party but is squishy (5d20)")]
 
     print("creating new tables")
     cur = db.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
-    cur.execute("CREATE TABLE IF NOT EXISTS deleted_character(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER, player_id INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS deleted_character(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER, player_id INTEGER)")
     cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL, xp_per_level INTEGER NOT NULL, max_hp INTEGER NOT NULL, description TEXT NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER NOT NULL, unattuned INTEGER NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id TEXT UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")

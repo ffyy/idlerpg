@@ -48,3 +48,5 @@
 4, danced in the moonlight
 4, ate one bite of waybread
 4, witnessed the entire life of a mortal man pass in the blink of an eye
+5, did a placeholder wizard thing
+6, prayed or something, i dunno this is just a placeholder

@@ -66,7 +66,7 @@ def register_character(name, class_id, player_id):
         traceback.print_exc()
         return "Something went wrong"
 
-def delete_character(player_id):
+def delete_character_by_id(player_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     character = get_character_by_player_id(player_id)
@@ -78,25 +78,27 @@ def delete_character(player_id):
     response = "Deleted character " + character.name
     return response
 
+def delete_character(character: Character):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    player_id = get_discord_id_by_character(character)
+    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id) VALUES (?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id))
+    cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
+    cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
+    db.commit()
+    cur.close()
+
+def reincarnate(character: Character):
+    player_id = get_discord_id_by_character(character)
+    delete_character(character)
+    register_character(character.name, character.character_class.id_, player_id)
+
 def register_player(player_id, character_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("INSERT INTO player(discord_id,character_id)",(player_id, character_id))
     db.commit()
     cur.close()
-
-def unregister_player(player_id):
-    db = sqlite3.connect(DB_PATH)
-    cur = db.cursor()
-    try:
-        cur.execute("DELETE FROM player WHERE player_id = ?",(player_id))
-        delete_character(player_id)
-        db.commit()
-        cur.close()
-        return "Deleted you & your character!"
-    except:
-        traceback.print_exc()
-        return "Something went wrong."
 
 def get_character_by_name(name) -> Character:
     db = sqlite3.connect(DB_PATH)
