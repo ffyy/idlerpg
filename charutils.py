@@ -107,7 +107,7 @@ def get_character_by_name(name) -> Character:
     if db_character is None:
         return None
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6])
         character = db_character_to_character(data_character)
         return character
 
@@ -211,7 +211,7 @@ def is_name_valid(name) -> bool:
     cur = db.cursor()
     cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
     count = int(cur.fetchone()[0])
-    if count > 0 or len(name) > 12 or not name.isascii():
+    if count > 0 or len(name) > 12 or not name.isalpha():
         return False
     else:
         return True
@@ -282,21 +282,25 @@ def character_search(name, users_list) -> str:
     if character is None:
         return "Character not found"
 
+    hp_bar = make_hp_bar(character.current_hp, character.character_class.max_hp)
+
     results_lists = []
     results_lists.append(["Name"])
     results_lists.append(["L"])
     results_lists.append(["Class"])
     results_lists.append(["GS"])
     results_lists.append(["XP"])
+    results_lists.append(["HP"])
     results_lists.append(["Player"])
     results_lists[0].append(character.name)
     results_lists[1].append(str(character.level))
     results_lists[2].append(character.character_class.name)
     results_lists[3].append(str(character.gear.gearscore))
     results_lists[4].append(str(character.current_xp) + "/" + str(character.character_class.xp_per_level))
+    results_lists[5].append(hp_bar)
     player_name = [name["name"] for name in users_list if name["id"] == int(get_discord_id_by_character(character))]
-    if player_name and player_name != "": results_lists[5].append(player_name[0])
-    else: results_lists[5].append("Unknown")
+    if player_name and player_name != "": results_lists[6].append(player_name[0])
+    else: results_lists[6].append("Unknown")
 
     find_results = make_table(results_lists)
 

@@ -61,13 +61,21 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Success!**"])
         give_quest_rewards(completed_quest)
     else:
+        hp_loss = int(100 - (sum(completed_quest.party_rolls) / dm_quest.quest_difficulty) * 100)
         for character in completed_quest.party:
             character_statistics = charutils.get_character_statistics(character)
             character_statistics.quests_attempted += 1
             charutils.update_character_statistics(character_statistics)
+            character.current_hp -= hp_loss
+            #if hp falls to zero or less, kill character here
+            if character.current_hp <= 0: character.current_hp = 1
+            charutils.update_db_character(charutils.character_to_db_character(character))
         completed_quest.outcome = 0
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Unfortunately,"])
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
+        completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Everyone involved lost"])
+        completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(hp_loss)])
+        completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "HP."])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
         completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Failure!**"])
@@ -104,6 +112,7 @@ def run_adventure() -> Quest:
     completed_quest_lists.append(["Class"])
     completed_quest_lists.append(["Level"])
     completed_quest_lists.append(["GS"])
+    completed_quest_lists.append(["HP"])
     completed_quest_lists.append(["Roll"])
 
     for i,hero in enumerate(completed_quest.party):
@@ -111,7 +120,8 @@ def run_adventure() -> Quest:
         completed_quest_lists[1].append(hero.character_class.name)
         completed_quest_lists[2].append(str(hero.level))
         completed_quest_lists[3].append(str(hero.gear.gearscore))
-        completed_quest_lists[4].append(str(completed_quest.party_rolls[i]))
+        completed_quest_lists[4].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
+        completed_quest_lists[5].append(str(completed_quest.party_rolls[i]))
 
     quest_table = make_table(completed_quest_lists)
 
@@ -214,7 +224,7 @@ def run_long_rest():
     old_characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
     for old_character in old_characters:
         old_character.current_xp += old_character.roll_for_passive_xp()
-        resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.current_xp, old_character.character_class, old_character.gear)
+        resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear)
         resting_character.current_xp += resting_character.roll_for_passive_xp()
         rested_characters.append(resting_character.take_long_rest())
 

@@ -20,7 +20,7 @@ def make_table(input) -> str:
         table = " ".join([table, column[0]])
         table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
     table = "".join([table, "|\n+"])
-    
+
     #line below
     for column_width in column_widths:
         table = "".join([table, "-"*(column_width+2)])
@@ -38,15 +38,38 @@ def make_table(input) -> str:
             table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
             del column[0]
         table = "".join([table, "|\n"])
-    
+
     #bottom line
     table = "".join([table, "+"])
     for column_width in column_widths:
         table = "".join([table, "-"*(column_width+2)])
         table = "".join([table, "+"])
     table = "".join([table, "```"])
-    
+
     return(table)
+
+def make_hp_bar(current_hp, max_hp) -> str:
+    hp_ratio = current_hp / max_hp * 10
+    filled_squares = int(hp_ratio)
+
+    FILLED_SYMBOL = "■"
+    EMPTY_SYMBOL = "□"
+    PARTIAL_SYMBOL = "□"
+
+    hp_bar = "["
+    for i in range(filled_squares):
+        hp_bar= "".join([hp_bar, FILLED_SYMBOL])
+
+    if filled_squares > 0 and hp_ratio % filled_squares > 0:
+        hp_bar= "".join([hp_bar, PARTIAL_SYMBOL])
+        filled_squares += 1
+
+    for i in range(10-filled_squares):
+        hp_bar= "".join([hp_bar, EMPTY_SYMBOL])
+
+    hp_bar= "".join([hp_bar, "]"])
+
+    return hp_bar
 
 def debug_print(var):
     printstring = "------"
