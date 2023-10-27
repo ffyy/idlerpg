@@ -143,11 +143,11 @@ def run_pvp_encounter():
         character_roll = character.roll_dice() + character.gear.gearscore
         pvp_rolls.append(character_roll)
     pvp_journal = [pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."]
-    xp_reward = max(1, pvp_characters[1].level - pvp_characters[0].level) * 2000
+    xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
     if pvp_rolls[0] >= pvp_rolls[1]:
         ganker_statistics.ganks_won += 1
         charutils.update_character_statistics(ganker_statistics)
-        pvp_journal[0] = " ".join([pvp_journal[0], "Fortunately,"])
+        pvp_journal[0] = " ".join([pvp_journal[0], "This time,"])
         pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
         pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
         pvp_journal[0] = ".\n".join([pvp_journal[0], str(pvp_rolls[0])])
@@ -161,7 +161,7 @@ def run_pvp_encounter():
     elif pvp_rolls[0] < pvp_rolls[1]:
         defender_statistics.defences_won += 1
         charutils.update_character_statistics(defender_statistics)
-        pvp_journal[0] = " ".join([pvp_journal[0], "Sadly,"])
+        pvp_journal[0] = " ".join([pvp_journal[0], "Unfortunately,"])
         pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
         pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
         pvp_journal[0] = ".\n".join([pvp_journal[0], str(pvp_rolls[0])])
@@ -195,10 +195,14 @@ def run_personal_quest():
     personal_quest_journal = " ".join([personal_quest_journal, "the"])
     personal_quest_journal = " ".join([personal_quest_journal, hero.character_class.name])
     personal_quest_journal = "".join([personal_quest_journal, personal_quest_hook])
-    personal_quest_journal = ", ".join([personal_quest_journal, "which earned them"])
+    personal_quest_journal = ", ".join([personal_quest_journal, "which earned"])
+    personal_quest_journal = " ".join([personal_quest_journal, hero.name])
     personal_quest_journal = " ".join([personal_quest_journal, str(xp_reward)])
     personal_quest_journal = " ".join([personal_quest_journal, "xp."])
     hero.current_xp += xp_reward
+    statistics = charutils.get_character_statistics(hero)
+    statistics.personal_quests += 1
+    charutils.update_character_statistics(statistics)
     charutils.update_db_character(charutils.character_to_db_character(hero))
     return personal_quest_journal
 
