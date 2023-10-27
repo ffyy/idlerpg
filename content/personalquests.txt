@@ -7,7 +7,7 @@
 1, won a high-stakes Dragon/Clan/Blood tournament
 1, followed a treasure map to the hidden treasure
 1, balanced on the head of a pin
-1, chased chickens
+1, saved a cat which had got stuck up a tree
 1, reinvigorated the local criminal underground
 1, withdrew other peoples' money from the bank
 2, single-handedely held off an orc invasion
@@ -48,5 +48,34 @@
 4, danced in the moonlight
 4, ate one bite of waybread
 4, witnessed the entire life of a mortal man pass in the blink of an eye
-5, did a placeholder wizard thing
-6, prayed or something, i dunno this is just a placeholder
+5, bought some spell reagents
+5, did some science
+5, researched ancient curses
+5, spent the entire day climbing up a wizard tower
+5, phoned a friend using a palantir
+5, wrote a research paper about why magic rules
+5, drew that cool S symbol into a spellbook
+5, used magic to do laundry
+5, hid all day in a small summoned hut
+5, complained about getting old
+5, complained about the shrinkflation of mass-produced eye of newt
+5, summoned an eldritch horror on purpose
+5, accidentally summoned an eldritch horror
+5, explained to a random passer-by that arcane magic is true magic and divine magic is just dogmatic tomfoolery
+5, enchanted a few magic items
+5, practiced the signature look of superiority
+6, officiated a wedding
+6, turned water into wine
+6, saved a life
+6, donated money to a temple
+6, destroyed a cult of evil
+6, prevented a zombie apocalypse
+6, spent some time in quiet prayer
+6, converted an entire village to the true faith
+6, blessed a newborn child
+6, doggedly debated dogmas despite divine denouncement
+6, humbly refused to be sainted
+6, had a sensible chuckle
+6, visited the brothel (as a medical professional)
+2, visited the brothel (as a client)
+6, aligned the chakras of all the wenches in the village
