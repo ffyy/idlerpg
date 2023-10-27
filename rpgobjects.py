@@ -88,10 +88,10 @@ class Character:
         while rested_character.current_xp >= self.character_class.xp_per_level:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
+            rested_character.current_hp = rested_character.character_class.max_hp
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0
-        rested_character.current_hp = rested_character.character_class.max_hp
         return rested_character
 
 class Player:
