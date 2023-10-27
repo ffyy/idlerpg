@@ -44,7 +44,7 @@ def run_quest(dm_quest: Quest) -> Quest:
         completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
         healer = next((hero for hero in completed_quest.party if hero.character_class.id_ == 6), None)
         if healer:
-            hp_gain = random.randint(1,8) + 4
+            hp_gain = random.randint(3,24) + 4
             for character in completed_quest.party:
                 character.current_hp = min(character.current_hp + hp_gain, character.character_class.max_hp)
                 charutils.update_db_character(charutils.character_to_db_character(character))
