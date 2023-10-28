@@ -261,16 +261,20 @@ def get_leaderboard(top_x, users_list) -> str:
         leaderboard_lists.append(["Class"])
         leaderboard_lists.append(["GS"])
         leaderboard_lists.append(["XP"])
+        leaderboard_lists.append(["Age (h)"])
         leaderboard_lists.append(["Player"])
         for character in top_characters:
+            character_statistics = get_character_statistics(character)
+            time_alive = (int(time.time()) - character_statistics.create_timestamp)/60/60
             leaderboard_lists[0].append(character.name)
             leaderboard_lists[1].append(str(character.level))
             leaderboard_lists[2].append(character.character_class.name)
             leaderboard_lists[3].append(str(character.gear.gearscore))
             leaderboard_lists[4].append(str(character.current_xp) + "/" + str(character.character_class.xp_per_level))
+            leaderboard_lists[5].append("%.2f" % time_alive + "h")
             player_name = [name["name"] for name in users_list if name["id"] == int(get_discord_id_by_character(character))]
-            if player_name and player_name != "": leaderboard_lists[5].append(player_name[0])
-            else: leaderboard_lists[5].append("Unknown")
+            if player_name and player_name != "": leaderboard_lists[6].append(player_name[0])
+            else: leaderboard_lists[6].append("Unknown")
 
         leaderboard = make_table(leaderboard_lists)
 
