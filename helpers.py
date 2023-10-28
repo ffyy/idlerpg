@@ -1,5 +1,8 @@
+import re
+
 def make_table(input) -> str:
     column_widths = []
+    RIGHT_ALIGN_EXPRESSION = "^[0-9h\.\/]+$" #used to identify cells which should be right aligned
 
     for i,column in enumerate(input):
         column_widths.append(0)
@@ -34,8 +37,13 @@ def make_table(input) -> str:
     while len(input[0]) > 0:
         for i, column in enumerate(input):
             table = "".join([table, "|"])
-            table = " ".join([table, column[0]])
-            table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
+            if re.match(RIGHT_ALIGN_EXPRESSION, column[0]):
+                table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
+                table = "".join([table, column[0]])
+                table = "".join([table, " "])
+            if not re.match(RIGHT_ALIGN_EXPRESSION, column[0]):
+                table = " ".join([table, column[0]])
+                table = "".join([table, " "*(column_widths[i] + 1 - len(column[0]))])
             del column[0]
         table = "".join([table, "|\n"])
 
