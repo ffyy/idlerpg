@@ -32,13 +32,13 @@ def get_character_statistics(character: Character) -> CharacterStatistics:
     cur.execute("SELECT * FROM statistics WHERE character_id = ?", (character.id_,))
     db_stats = cur.fetchone()
     cur.close()
-    stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6], db_stats[7], db_stats[8])
+    stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6], db_stats[7], db_stats[8], db_stats[9], db_stats[10])
     return stats
 
 def update_character_statistics(stats: CharacterStatistics):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("UPDATE statistics SET quests_attempted = ?, quests_won = ?, ganks_attempted = ?, ganks_won = ?, defences_attempted = ?, defences_won = ?, personal_quests = ? WHERE character_id = ?", (stats.quests_attempted, stats.quests_won, stats.ganks_attempted, stats.ganks_won, stats.defences_attempted, stats.defences_won, stats.personal_quests, stats.character_id))
+    cur.execute("UPDATE statistics SET quests_attempted = ?, quests_won = ?, ganks_attempted = ?, ganks_won = ?, defences_attempted = ?, defences_won = ?, pks = ?, personal_quests = ? WHERE character_id = ?", (stats.quests_attempted, stats.quests_won, stats.ganks_attempted, stats.ganks_won, stats.defences_attempted, stats.defences_won, stats.pks, stats.personal_quests, stats.character_id))
     db.commit()
     cur.close
 

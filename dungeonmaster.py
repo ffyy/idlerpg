@@ -97,7 +97,7 @@ def run_quest(dm_quest: Quest) -> Quest:
 
     return completed_quest
 
-def run_adventure() -> Quest:
+def run_adventure() -> str:
     character_ids = charutils.get_character_ids()
 
     QUEST_TYPES = ["experience", "loot"]
@@ -108,7 +108,7 @@ def run_adventure() -> Quest:
     quest = Quest(quest_type, [], [], 0, quest_hook, 0)
 
     if not character_ids:
-        return quest
+        return "I tried to run an adventure, but nobody showed up. 😢"
 
     if(len(character_ids)) == 1:
         quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
@@ -117,7 +117,7 @@ def run_adventure() -> Quest:
         for character_id in random.sample(character_ids, party_size):
             quest.party.append(charutils.get_character_by_id(character_id[0]))
 
-    difficulty = random.randint(1,100*len(quest.party))
+    difficulty = random.randint(20,100)*len(quest.party)
     quest.quest_difficulty = difficulty
 
     completed_quest = run_quest(quest)
@@ -142,15 +142,16 @@ def run_adventure() -> Quest:
 
     completed_quest.quest_journal = "".join([completed_quest.quest_journal, quest_table])
 
-    return completed_quest
+    return completed_quest.quest_journal
 
-def run_pvp_encounter():
+def run_pvp_encounter() -> str:
     all_characters = charutils.get_all_characters()
-    #if len(all_characters) < 6:
-    #    return ["I tried to incite violence, but there weren't enough characters around for PvP.",""]
+    #if there are too few characters, DM should actually run a personal quest instead of the volatile pvp
+    if len(all_characters) < 6:
+        return ["I tried to incite violence, but there weren't enough characters around for PvP.",""]
 
     all_characters.sort(key=lambda character:character.level)
-    i_ganker = randint(0, len(all_characters)//2) #ganker index
+    i_ganker = randint(0, len(all_characters)//2)
     pvp_characters = []
     pvp_characters.append(all_characters[i_ganker])
     del all_characters[0:i_ganker+1]
@@ -167,56 +168,59 @@ def run_pvp_encounter():
     for character in pvp_characters:
         character_roll = character.roll_dice() + character.gear.gearscore
         pvp_rolls.append(character_roll)
-    pvp_journal = [pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."]
+    pvp_journal = pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."
     xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
     hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
-    if pvp_rolls[0] >= pvp_rolls[1]: #ganker wins
+    if pvp_rolls[0] >= pvp_rolls[1]:
         ganker_statistics.ganks_won += 1
-        charutils.update_character_statistics(ganker_statistics)
-        pvp_journal[0] = " ".join([pvp_journal[0], "This time,"])
-        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-        pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
+        pvp_journal = " ".join([pvp_journal, "This time,"])
+        pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+        pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
         pvp_characters[1].current_hp -= hp_loss
-        pvp_journal[0] = ". ".join([pvp_journal[0], pvp_characters[1].name])
-        pvp_journal[0] = " ".join([pvp_journal[0], "lost"])
-        pvp_journal[0] = " ".join([pvp_journal[0], str(hp_loss)])
-        pvp_journal[0] = " ".join([pvp_journal[0], "HP."])
+        pvp_journal = ". ".join([pvp_journal, pvp_characters[1].name])
+        pvp_journal = " ".join([pvp_journal, "lost"])
+        pvp_journal = " ".join([pvp_journal, str(hp_loss)])
+        pvp_journal = " ".join([pvp_journal, "HP."])
         if pvp_characters[1].current_hp > 0:
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[1]))
         elif pvp_characters[1].current_hp <= 0:
             pvp_characters[1].current_hp = 0
+            if ganker_statistics.pks:
+                ganker_statistics.pks += 1
+            else: ganker_statistics.pks = 1
             charutils.reincarnate(pvp_characters[1])
-            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[1].name])
-            pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
-        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
-        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
-        pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
-        pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
-        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-        pvp_journal[0] = ": ".join([pvp_journal[0], str(xp_reward)])
+            pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
+            pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+        pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
+        pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
+        pvp_journal = " - ".join([pvp_journal, "**Success!**"])
+        pvp_journal = "\n".join([pvp_journal, "XP reward for"])
+        pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+        pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
         pvp_characters[0].current_xp += xp_reward
+        charutils.update_character_statistics(ganker_statistics)
         charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
-    elif pvp_rolls[0] < pvp_rolls[1]: #defender wins
+    elif pvp_rolls[0] < pvp_rolls[1]:
         defender_statistics.defences_won += 1
         charutils.update_character_statistics(defender_statistics)
-        pvp_journal[0] = " ".join([pvp_journal[0], "Unfortunately,"])
-        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-        pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
+        pvp_journal = " ".join([pvp_journal, "Unfortunately,"])
+        pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+        pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
         pvp_characters[0].current_hp -= hp_loss
-        pvp_journal[0] = ". ".join([pvp_journal[0], pvp_characters[0].name])
-        pvp_journal[0] = " ".join([pvp_journal[0], "lost"])
-        pvp_journal[0] = " ".join([pvp_journal[0], str(hp_loss)])
-        pvp_journal[0] = " ".join([pvp_journal[0], "HP."])
+        pvp_journal = ". ".join([pvp_journal, pvp_characters[0].name])
+        pvp_journal = " ".join([pvp_journal, "lost"])
+        pvp_journal = " ".join([pvp_journal, str(hp_loss)])
+        pvp_journal = " ".join([pvp_journal, "HP."])
         if pvp_characters[0].current_hp > 0:
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
         elif pvp_characters[0].current_hp <= 0:
             pvp_characters[0].current_hp = 0
             charutils.reincarnate(pvp_characters[0])
-            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-            pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
-        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
-        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
-        pvp_journal[0] = " - ".join([pvp_journal[0], "**Failure!**"])
+            pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+            pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+        pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
+        pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
+        pvp_journal = " - ".join([pvp_journal, "**Failure!**"])
 
     pvp_report_lists = []
     pvp_report_lists.append(["Fighter"])
@@ -234,11 +238,11 @@ def run_pvp_encounter():
         pvp_report_lists[4].append(make_hp_bar(fighter.current_hp, fighter.character_class.max_hp))
         pvp_report_lists[5].append(str(pvp_rolls[i]))
 
-    pvp_journal.append(make_table(pvp_report_lists))
+    pvp_journal = "".join([pvp_journal, (make_table(pvp_report_lists))])
 
     return pvp_journal
 
-def run_personal_quest():
+def run_personal_quest() -> str:
     hero = random.choice(charutils.get_all_characters())
     personal_quest_hook = random.choice([line for line in PERSONAL_QUESTS if line[0] == str(hero.character_class.id_)])[2:]
     xp_reward = randint(500, 2000)
@@ -256,9 +260,10 @@ def run_personal_quest():
     statistics.personal_quests += 1
     charutils.update_character_statistics(statistics)
     charutils.update_db_character(charutils.character_to_db_character(hero))
+
     return personal_quest_journal
 
-def run_long_rest():
+def run_long_rest() -> str:
     old_characters = charutils.get_all_characters()
     rested_characters = []
     day_report = []
@@ -273,7 +278,7 @@ def run_long_rest():
     for i, rested_character in enumerate(rested_characters):
         charutils.update_db_character(charutils.character_to_db_character(rested_character))
         charutils.update_db_gear(rested_character.gear)
-        if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore or rested_character.current_xp != old_characters[i].current_xp:
+        if rested_character.level != old_characters[i].level or rested_character.gear.gearscore != old_characters[i].gear.gearscore:
             personal_report = DayReport(rested_character.name, rested_character.level, rested_character.gear.gearscore, str(rested_character.current_xp) + "/" + str(rested_character.character_class.xp_per_level))
             if rested_character.level != old_characters[i].level:
                 personal_report.level_result = str(old_characters[i].level) + "->" + str(rested_character.level)

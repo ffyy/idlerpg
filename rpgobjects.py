@@ -157,8 +157,10 @@ class CharacterStatistics:
             ganks_won,
             defences_attempted,
             defences_won,
+            pks,
             personal_quests,
-            create_timestamp
+            create_timestamp,
+            delete_timestamp
     ):
         self.character_id = character_id
         self.quests_attempted = quests_attempted
@@ -167,5 +169,6 @@ class CharacterStatistics:
         self.ganks_won = ganks_won
         self.defences_attempted = defences_attempted
         self.defences_won = defences_won
+        self.pks = pks
         self.personal_quests = personal_quests
         self.create_timestamp = create_timestamp

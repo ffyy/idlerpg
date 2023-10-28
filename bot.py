@@ -6,6 +6,7 @@ import initialsetup
 import charutils
 import dungeonmaster
 import typing
+import re
 from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
@@ -48,8 +49,8 @@ class RpgEngine(discord.Client):
         if self.run_adventures.current_loop == 0:
             self.run_adventures.change_interval(minutes=TIMESCALE)
         channel = self.get_channel(CHANNEL.id)
-        adventure_embed = create_adventure_embed()
-        await channel.send(content=adventure_embed.title + adventure_embed.description)
+        adventure_report = create_adventure_report()
+        await channel.send(content=adventure_report)
 
     @run_adventures.before_loop
     async def before_adventuring(self):
@@ -65,8 +66,8 @@ class RpgEngine(discord.Client):
     async def run_long_rests(self):
         print(str(datetime.datetime.now()) + " - running rest " + str(self.run_long_rests.current_loop))
         channel = self.get_channel(CHANNEL.id)
-        day_embed = create_day_report_embed()
-        await channel.send(content=day_embed.title + day_embed.description)
+        rest_report = create_rest_report()
+        await channel.send(content=rest_report)
 
     @run_long_rests.before_loop
     async def before_resting(self):
@@ -82,8 +83,8 @@ class RpgEngine(discord.Client):
     async def run_pvp_encounters(self):
         print(str(datetime.datetime.now()) + " - running pvp " + str(self.run_pvp_encounters.current_loop))
         channel = self.get_channel(CHANNEL.id)
-        pvp_embed = create_pvp_embed()
-        await channel.send(content=pvp_embed.title + pvp_embed.description)
+        pvp_report = create_pvp_report()
+        await channel.send(content=pvp_report)
 
     @run_pvp_encounters.before_loop
     async def before_pvp(self):
@@ -131,26 +132,24 @@ if DEBUG_MODE == "1":
     @client.tree.command(name="adventure",description="Run an adventure") #testing command
     async def adventure(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            await interaction.response.send_message("Running a quest")
-            quest_embed = create_adventure_embed()
-            await interaction.channel.send(content=quest_embed.title + quest_embed.description)
+            adventure_report = create_adventure_report()
+            await interaction.response.send_message(content=adventure_report)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
     @client.tree.command(name="pvp",description="Run a PvP encounter") #testing command
     async def pvp(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            pvp_embed = create_pvp_embed()
-            await interaction.response.send_message(content=pvp_embed.title + pvp_embed.description)
+            pvp_report = create_pvp_report()
+            await interaction.response.send_message(content=pvp_report)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
     @client.tree.command(name="rest",description="Take a long rest") #testing command
     async def rest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            await interaction.response.send_message("Leveling up characters & gear")
-            day_embed = create_day_report_embed()
-            await interaction.channel.send(content=day_embed.title + day_embed.description)
+            rest_report = create_rest_report()
+            await interaction.response.send_message(content=rest_report)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
@@ -159,11 +158,11 @@ if DEBUG_MODE == "1":
 @client.tree.command(name="top",description="Get top X characters. Returns top 10 if no argument is given.") #make it prettier
 async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[int]):
     if top_x and top_x > 0 and top_x <= 10:
-        leaderboard_embed = await create_leaderboard_embed(top_x)
-        await interaction.response.send_message(content=leaderboard_embed.title + leaderboard_embed.description)
+        leaderboard_report = await create_leaderboard_report(top_x)
+        await interaction.response.send_message(content=leaderboard_report)
     elif not top_x:
-        leaderboard_embed = await create_leaderboard_embed(10)
-        await interaction.response.send_message(content=leaderboard_embed.title + leaderboard_embed.description)
+        leaderboard_report = await create_leaderboard_report(10)
+        await interaction.response.send_message(content=leaderboard_report)
     else:
         await interaction.response.send_message("You need to enter a number between 0 and 10", ephemeral=True)
 
@@ -221,27 +220,24 @@ async def register(interaction: discord.Interaction, name: str):
         else:
             await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 12 characters, must be unique and must include only letters.", ephemeral=True)
 
-@client.tree.command(name="find", description="Find a character. Returns your own character if no name is given.") #TODO: this doesn't need to be an embed anymore
+@client.tree.command(name="find", description="Find a character. Returns your own character if no name is given.")
 async def find(interaction: discord.Interaction, name: typing.Optional[str]):
-    results_embed = discord.Embed(title="Search results")
+    title_text = "Search results"
     if name is None:
-        results_report = charutils.character_search(name, [{"id":interaction.user.id, "name":interaction.user.display_name}])
-        results_embed.title = "Your character"
-        results_embed.description = results_report
-        await interaction.response.send_message(content=results_embed.title + results_embed.description)
+        member_name = re.sub("[`>*]", "", interaction.user.display_name)
+        results_report = charutils.character_search(name, [{"id":interaction.user.id, "name":member_name}])
+        title_text = "Your character:"
     elif name:
         members_list = client.get_all_members()
         users_list = []
         for member in members_list:
-            if len(member.display_name) > 10:
-                member_name = member.display_name[:6]+"..."
-            else:
-                member_name = member.display_name
+            member_name = member.display_name
+            member_name = re.sub("[`>*]", "", member_name)
             users_list.append({"id":member.id, "name":member_name})
         results_report = charutils.character_search(name, users_list)
-        results_embed.title = "Stats for character " + name + ":"
-        results_embed.description = results_report
-        await interaction.response.send_message(content=results_embed.title + results_embed.description)
+        title_text = "Search results for " + name + ":"
+
+    await interaction.response.send_message(content=title_text + results_report)
 
 @client.tree.command(name="changename", description="Rename your character")
 async def changename(interaction: discord.Interaction, new_name: str):
@@ -261,42 +257,52 @@ async def changename(interaction: discord.Interaction, new_name: str):
         await interaction.response.send_message(content="Something went wrong", ephemeral=True)
 
 #LOOP FUNCTIONS
-def create_day_report_embed():
-    day_report = dungeonmaster.run_long_rest()
-    day_embed = discord.Embed(title="**The adventurers took a long rest.**\n", type="rich", description="During the night, they thought about experiences they had had during the day and attuned new magic items. Character statistics in the morning:" + day_report)
-    if day_report == "":
-        day_embed.description="After sitting down to rest they found out that they weren't all that tired, and just kept going without leveling anything up."
-        return day_embed
-    return day_embed
+def create_rest_report():
+    rest_results = dungeonmaster.run_long_rest()
+    title_text = "**The adventurers took a long rest.**\n"
+    report_fluff = "During the night, they thought about experiences they had had during the day and attuned new magic items. Character statistics in the morning:"
+    if rest_results == "":
+        report_fluff = "After sitting down to rest they found out that they weren't all that tired, and just kept going without leveling anything up."
 
-def create_adventure_embed():
-    quest = dungeonmaster.run_adventure()
-    if len(quest.party) == 0:
-        quest_embed = discord.Embed(title="I tried to run an adventure, but nobody showed up.")
-        return quest_embed
-    quest_embed = discord.Embed(title="**An epic adventure was had!**\n", type="rich", description=quest.quest_journal)
-    return quest_embed
+    rest_report = title_text
+    rest_report = "".join([rest_report, report_fluff])
+    rest_report = "".join([rest_report, rest_results])
 
-def create_pvp_embed():
-    pvp_encounter = dungeonmaster.run_pvp_encounter()
-    pvp_embed = discord.Embed(title="**Heroes fighting heroes!**\n", type="rich", description=pvp_encounter[0] + pvp_encounter[1])
-    return pvp_embed
+    return rest_report
 
-async def create_leaderboard_embed(top_x):
+def create_adventure_report():
+    quest_results = dungeonmaster.run_adventure()
+    title_text = "**An epic adventure was had!**\n"
+
+    adventure_report = title_text
+    adventure_report = "".join([adventure_report, quest_results])
+
+    return adventure_report
+
+def create_pvp_report():
+    pvp_results = dungeonmaster.run_pvp_encounter()
+    title_text = "**Heroes fighting heroes!**\n"
+
+    pvp_report = title_text
+    pvp_report = "".join([pvp_report, pvp_results])
+    return pvp_report
+
+async def create_leaderboard_report(top_x):
+    title_text = "Top " + str(top_x) + " characters in this world:"
+
     members_list = client.get_all_members()
     users_list = []
     for member in members_list:
-        if len(member.display_name) > 10:
-            member_name = member.display_name[:6]+"..."
-        else:
-            member_name = member.display_name
+        member_name = re.sub("[`>*]", "", member.display_name)
         users_list.append({"id":member.id, "name":member_name})
     leaderboard = charutils.get_leaderboard(top_x, users_list)
+
     if leaderboard == "":
-        leaderboard_embed = discord.Embed(title="There are no characters yet.")
-        return leaderboard_embed
-    leaderboard_embed = discord.Embed(title="Top " + str(top_x) + " characters in this world:", description=leaderboard)
-    return leaderboard_embed
+        title_text = "There are no characters yet."
+
+    leaderboard_report = title_text
+    leaderboard_report = "".join([leaderboard_report, leaderboard])
+    return leaderboard_report
 
 print("starting bot")
 client.run(TOKEN)
