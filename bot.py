@@ -46,11 +46,22 @@ class RpgEngine(discord.Client):
     @tasks.loop(minutes=(TIMESCALE))
     async def run_adventures(self):
         print(str(datetime.datetime.now()) + " - running adventure " + str(self.run_adventures.current_loop))
-        if self.run_adventures.current_loop == 0:
-            self.run_adventures.change_interval(minutes=TIMESCALE)
         channel = self.get_channel(CHANNEL.id)
         adventure_report = create_adventure_report()
-        await channel.send(content=adventure_report)
+        await channel.send(content=adventure_report[0])
+        if len(adventure_report[1]) > 0:
+            death_notice = ""
+            users_generator = client.get_all_members()
+            users_list = [] #creating a new list because client.get_all_members() can only be iterated through once, but we need to do it several times
+            for user in users_generator:
+                users_list.append(user)
+            for discord_id in adventure_report[1]:
+                for member in users_list:
+                    if int(member.id) == int(discord_id):
+                        user = await client.fetch_user(discord_id)
+                        death_notice = " ".join([death_notice, user.mention])
+            death_notice = " ".join([death_notice, "your character died and was reincarnated."])
+            await channel.send(content=death_notice)
 
     @run_adventures.before_loop
     async def before_adventuring(self):
@@ -84,12 +95,22 @@ class RpgEngine(discord.Client):
         print(str(datetime.datetime.now()) + " - running pvp " + str(self.run_pvp_encounters.current_loop))
         channel = self.get_channel(CHANNEL.id)
         pvp_report = create_pvp_report()
-        await channel.send(content=pvp_report)
+        await channel.send(content=pvp_report[0])
+        if len(pvp_report[1]) > 0:
+            death_notice = ""
+            users_list = client.get_all_members()
+            for discord_id in pvp_report[1]:
+                for member in users_list:
+                    if int(member.id) == int(discord_id):
+                        user = await client.fetch_user(discord_id)
+                        death_notice = " ".join([death_notice, user.mention])
+            death_notice = " ".join([death_notice, "your character died and was reincarnated."])
+            await channel.send(content=death_notice)
 
     @run_pvp_encounters.before_loop
     async def before_pvp(self):
         if self.run_pvp_encounters.current_loop == 0:
-            sleep_time = int((TIMESCALE*60)*2/3) #timescale in seconds
+            sleep_time = int((TIMESCALE*60)*3/4) #timescale in seconds
             print(str(self.run_pvp_encounters) + " waiting until start: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
@@ -106,7 +127,7 @@ class RpgEngine(discord.Client):
     @run_personal_quests.before_loop
     async def before_personal_quest(self):
         if self.run_personal_quests.current_loop == 0:
-            sleep_time = int((TIMESCALE*60)/3) #timescale in seconds
+            sleep_time = int((TIMESCALE*60)/4) #timescale in seconds
             print(str(self.run_personal_quests) + " waiting until start: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
@@ -133,7 +154,24 @@ if DEBUG_MODE == "1":
     async def adventure(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
             adventure_report = create_adventure_report()
-            await interaction.response.send_message(content=adventure_report)
+            await interaction.response.send_message(content=adventure_report[0])
+            if len(adventure_report[1]) > 0:
+                channel = interaction.channel
+                death_notice = ""
+                users_generator = client.get_all_members()
+                users_list = [] #creating a new list because client.get_all_members() can only be iterated through once, but we need to do it several times
+                for user in users_generator:
+                    users_list.append(user)
+                for discord_id in adventure_report[1]:
+                    for member in users_list:
+                        if int(member.id) == int(discord_id):
+                            print("found match")
+                            user = await client.fetch_user(discord_id)
+                            death_notice = " ".join([death_notice, user.mention])
+                        else:
+                            print("no match - " + str(member.id) + " / " + str(discord_id))
+                death_notice = " ".join([death_notice, "your character died and was reincarnated."])
+                await channel.send(content=death_notice)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
@@ -141,7 +179,12 @@ if DEBUG_MODE == "1":
     async def pvp(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
             pvp_report = create_pvp_report()
-            await interaction.response.send_message(content=pvp_report)
+            await interaction.response.send_message(content=pvp_report[0])
+            if len(pvp_report[1]) > 0: #this is broken
+                for discord_id in pvp_report[1]:
+                    channel = interaction.channel
+                    user = await client.fetch_user(discord_id)
+                    if user: await channel.send(f"{user.mention} rip your character bro")
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
@@ -289,7 +332,8 @@ Each real-life hour, a day passes in the game world. During each game day:
 - all characters will take a rest.\n
 The choice of class when registering has a large impact on how your character will perform. Different classes use different dice when rolling to determine the outcomes of challenges. Classes can also have different maximum hit points values and different experience targets for leveling up.\n
 Losing at challenges will hurt your character. If a character's hit points (HP) run out, they will permanently die and will be reincarnated at level 0, with the same name and class.\n
-If a character has earned enough experience to reach the next level, they will level up and heal to full when resting.
+If a character has earned enough experience to reach the next level, they will level up and heal to full when resting.\n
+You can find the full source code for the project at <https://github.com/ffyy/idlerpg>
                 """
             case "1":
                 response = """
@@ -356,8 +400,8 @@ def create_adventure_report():
     quest_results = dungeonmaster.run_adventure()
     title_text = "**An epic adventure was had!**\n"
 
-    adventure_report = title_text
-    adventure_report = "".join([adventure_report, quest_results])
+    adventure_report = [title_text, quest_results[1]]
+    adventure_report[0] = "".join([adventure_report[0], quest_results[0]])
 
     return adventure_report
 
@@ -365,8 +409,10 @@ def create_pvp_report():
     pvp_results = dungeonmaster.run_pvp_encounter()
     title_text = "**Heroes fighting heroes!**\n"
 
-    pvp_report = title_text
-    pvp_report = "".join([pvp_report, pvp_results])
+    pvp_report = [title_text, []]
+    pvp_report[0] = "".join([pvp_report[0], pvp_results[0]])
+    if len(pvp_results[1]) > 0:
+        pvp_report[1] = pvp_results[1]
     return pvp_report
 
 async def create_leaderboard_report(top_x, class_filter):

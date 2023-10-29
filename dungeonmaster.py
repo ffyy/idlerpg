@@ -88,12 +88,15 @@ def run_quest(dm_quest: Quest) -> Quest:
                 charutils.update_db_character(charutils.character_to_db_character(character))
             elif character.current_hp <= 0:
                 character.current_hp = 0
+                completed_quest.death_notices.append(charutils.get_discord_id_by_character(character))
                 charutils.reincarnate(character)
                 completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, character.name])
                 completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "died and was reincarnated at level 0!"])
         completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
         completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
         completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Failure!**"])
+
+    print(completed_quest.death_notices)
 
     return completed_quest
 
@@ -105,7 +108,7 @@ def run_adventure() -> str:
 
     quest_hook = ' '.join(["The heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 
-    quest = Quest(quest_type, [], [], 0, quest_hook, 0)
+    quest = Quest(quest_type, [], [], [], 0, quest_hook, 0)
 
     if not character_ids:
         return "I tried to run an adventure, but nobody showed up. 😢"
@@ -142,7 +145,7 @@ def run_adventure() -> str:
 
     completed_quest.quest_journal = "".join([completed_quest.quest_journal, quest_table])
 
-    return completed_quest.quest_journal
+    return [completed_quest.quest_journal, completed_quest.death_notices]
 
 def run_pvp_encounter() -> str:
     all_characters = charutils.get_all_characters()
@@ -168,21 +171,21 @@ def run_pvp_encounter() -> str:
     for character in pvp_characters:
         character_roll = character.roll_dice() + character.gear.gearscore
         pvp_rolls.append(character_roll)
-    pvp_journal = pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."
+    pvp_journal = [pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + ".", []]
     xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
     hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
     if pvp_rolls[0] >= pvp_rolls[1]:
         ganker_statistics.ganks_won += 1
         #fill outcome flavor text in journal
-        pvp_journal = " ".join([pvp_journal, "This time,"])
-        pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-        pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
+        pvp_journal[0] = " ".join([pvp_journal[0], "This time,"])
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+        pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
         #start handling loser hp loss
         pvp_characters[1].current_hp -= hp_loss
-        pvp_journal = ". ".join([pvp_journal, pvp_characters[1].name])
-        pvp_journal = " ".join([pvp_journal, "lost"])
-        pvp_journal = " ".join([pvp_journal, str(hp_loss)])
-        pvp_journal = " ".join([pvp_journal, "HP."])
+        pvp_journal[0] = ". ".join([pvp_journal[0], pvp_characters[1].name])
+        pvp_journal[0] = " ".join([pvp_journal[0], "lost"])
+        pvp_journal[0] = " ".join([pvp_journal[0], str(hp_loss)])
+        pvp_journal[0] = " ".join([pvp_journal[0], "HP."])
         #start handling loser death
         if pvp_characters[1].current_hp > 0:
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[1]))
@@ -191,59 +194,63 @@ def run_pvp_encounter() -> str:
             if ganker_statistics.pks:
                 ganker_statistics.pks += 1
             else: ganker_statistics.pks = 1
+            pvp_journal[1].append(charutils.get_discord_id_by_character(pvp_characters[1]))
             charutils.reincarnate(pvp_characters[1])
-            pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
-            pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[1].name])
+            pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
             #start handling loot
-            pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-            pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
+            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+            pvp_journal[0] = " ".join([pvp_journal[0], "looted a few magic items."])
             items_found = randint(1, max(pvp_characters[1].gear.gearscore, 1))
             pvp_characters[0].gear.unattuned += items_found
             charutils.update_db_gear(pvp_characters[0].gear)
+            discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
+            print("discord id is: " + str(discord_id))
         #fill outcome statistics in journal
-        pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
-        pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
-        pvp_journal = " - ".join([pvp_journal, "**Success!**"])
+        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
+        pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
         #handle xp gain for ganker
-        pvp_journal = "\n".join([pvp_journal, "XP reward for"])
-        pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-        pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
+        pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+        pvp_journal[0] = ": ".join([pvp_journal[0], str(xp_reward)])
         pvp_characters[0].current_xp += xp_reward
         charutils.update_character_statistics(ganker_statistics)
         charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
     elif pvp_rolls[0] < pvp_rolls[1]:
         defender_statistics.defences_won += 1
         #fill outcome flavor text in journal
-        pvp_journal = " ".join([pvp_journal, "Unfortunately,"])
-        pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-        pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
+        pvp_journal[0] = " ".join([pvp_journal[0], "Unfortunately,"])
+        pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+        pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
         #start handling loser hp loss
         pvp_characters[0].current_hp -= hp_loss
-        pvp_journal = ". ".join([pvp_journal, pvp_characters[0].name])
-        pvp_journal = " ".join([pvp_journal, "lost"])
-        pvp_journal = " ".join([pvp_journal, str(hp_loss)])
-        pvp_journal = " ".join([pvp_journal, "HP."])
+        pvp_journal[0] = ". ".join([pvp_journal[0], pvp_characters[0].name])
+        pvp_journal[0] = " ".join([pvp_journal[0], "lost"])
+        pvp_journal[0] = " ".join([pvp_journal[0], str(hp_loss)])
+        pvp_journal[0] = " ".join([pvp_journal[0], "HP."])
         #start handling loser death
         if pvp_characters[0].current_hp > 0:
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
         elif pvp_characters[0].current_hp <= 0:
+            pvp_journal[1].append(charutils.get_discord_id_by_character(pvp_characters[0]))
             pvp_characters[0].current_hp = 0
             if defender_statistics.pks:
                 defender_statistics.pks += 1
             else: defender_statistics.pks = 1
             charutils.reincarnate(pvp_characters[0])
-            pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-            pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
+            pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
             #start handling loot
-            pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
-            pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
+            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[1].name])
+            pvp_journal[0] = " ".join([pvp_journal[0], "looted a few magic items."])
             items_found = randint(1, max(pvp_characters[0].gear.gearscore, 1))
             pvp_characters[1].gear.unattuned += items_found
-            charutils.update_db_gear(pvp_characters[0].gear)
+            charutils.update_db_gear(pvp_characters[1].gear)
         #fill outcome statistics in journal
-        pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
-        pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
-        pvp_journal = " - ".join([pvp_journal, "**Failure!**"])
+        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
+        pvp_journal[0] = " - ".join([pvp_journal[0], "**Failure!**"])
         charutils.update_character_statistics(defender_statistics)
 
     pvp_report_lists = []
@@ -262,8 +269,7 @@ def run_pvp_encounter() -> str:
         pvp_report_lists[4].append(make_hp_bar(fighter.current_hp, fighter.character_class.max_hp))
         pvp_report_lists[5].append(str(pvp_rolls[i]))
 
-    pvp_journal = "".join([pvp_journal, (make_table(pvp_report_lists))])
-
+    pvp_journal[0] = "".join([pvp_journal[0], (make_table(pvp_report_lists))])
     return pvp_journal
 
 def run_personal_quest() -> str:
