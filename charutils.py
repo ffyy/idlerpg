@@ -35,6 +35,15 @@ def get_character_statistics(character: Character) -> CharacterStatistics:
     stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6], db_stats[7], db_stats[8], db_stats[9], db_stats[10])
     return stats
 
+def get_character_statistics_by_id(id_) -> CharacterStatistics:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM statistics WHERE character_id = ?", (id_,))
+    db_stats = cur.fetchone()
+    cur.close()
+    stats = CharacterStatistics(db_stats[0], db_stats[1], db_stats[2], db_stats[3], db_stats[4], db_stats[5], db_stats[6], db_stats[7], db_stats[8], db_stats[9], db_stats[10])
+    return stats
+
 def update_character_statistics(stats: CharacterStatistics):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -159,15 +168,31 @@ def get_character_by_player_id(player_id) -> Character:
 def get_character_ids() -> tuple:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("SELECT id_ from CHARACTER")
+    cur.execute("SELECT id_ FROM character")
     characters = cur.fetchall()
     return characters
 
-def get_all_characters() -> [Character]:
+def get_all_characters() -> list[Character]:
     characters = []
     for id_ in get_character_ids():
         characters.append(get_character_by_id(id_[0]))
     return characters
+
+def get_all_dead_characters() -> list[DeadCharacter]:
+    dead_characters = []
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM deleted_character")
+    db_results = cur.fetchall()
+    for db_character in db_results:
+        gearscore = get_gear(db_character[6]).gearscore
+        stats = get_character_statistics_by_id(db_character[0])
+        time_alive = stats.delete_timestamp - stats.create_timestamp
+        dead_characters.append(DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[5], gearscore, db_character[7], time_alive))
+
+    dead_characters.sort(key=lambda dead_character: -dead_character.life_length)
+
+    return dead_characters
 
 def get_class(id) -> CharacterClass:
     db = sqlite3.connect(DB_PATH)
@@ -283,6 +308,52 @@ def get_leaderboard(top_x, users_list, class_filter) -> str:
         leaderboard = make_table(leaderboard_lists)
 
         return leaderboard
+
+def get_graveyard(name, users_list, class_filter) -> str:
+    dead_characters = get_all_dead_characters()
+    top_characters = []
+
+    if name:
+        dead_characters = [character for character in dead_characters if character.name.lower() == name.lower()]
+
+    if class_filter:
+        dead_characters = [character for character in dead_characters if character.class_id == class_filter]
+
+    for i, character in enumerate(dead_characters):
+        if i < 10:
+            top_characters.append(character)
+
+    if len(top_characters) == 0:
+        return ""
+    else:
+        leaderboard_lists = []
+        leaderboard_lists.append(["Name"])
+        leaderboard_lists.append(["L"])
+        leaderboard_lists.append(["Class"])
+        leaderboard_lists.append(["GS"])
+        leaderboard_lists.append(["Quests"])
+        leaderboard_lists.append(["PvP"])
+        leaderboard_lists.append(["Kills"])
+        leaderboard_lists.append(["Time alive"])
+        leaderboard_lists.append(["Player"])
+        for character in top_characters:
+            stats = get_character_statistics_by_id(character.id_)
+            time_alive = int(character.life_length)/3600
+            leaderboard_lists[0].append(character.name)
+            leaderboard_lists[1].append(str(character.level))
+            leaderboard_lists[2].append(get_class(character.class_id).name)
+            leaderboard_lists[3].append(str(character.gearscore))
+            leaderboard_lists[4].append(str(stats.quests_won) + "/" + str(stats.quests_attempted))
+            leaderboard_lists[5].append(str(stats.ganks_won+stats.defences_won) + "/" + str(stats.ganks_attempted+stats.defences_attempted))
+            leaderboard_lists[6].append(str(stats.pks))
+            leaderboard_lists[7].append("%.2f" % time_alive + "h")
+            player_name = [name["name"] for name in users_list if name["id"] == character.player_id]
+            if player_name and player_name != "": leaderboard_lists[8].append(player_name[0])
+            else: leaderboard_lists[8].append("Unknown")
+
+    graveyard = make_table(leaderboard_lists)
+
+    return graveyard
 
 def character_search(name, users_list) -> str:
     if name:

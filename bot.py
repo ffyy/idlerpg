@@ -155,7 +155,7 @@ if DEBUG_MODE == "1":
 
 #TREE COMMANDS
 
-@client.tree.command(name="top",description="Get top X characters. Returns top 10 if no argument is given.") #make it prettier
+@client.tree.command(name="top",description="Get top X characters. Returns top 10 if no argument is given.")
 async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[int], class_filter: typing.Optional[str]):
     if top_x and top_x > 0 and top_x <= 10:
         leaderboard_report = await create_leaderboard_report(top_x, class_filter)
@@ -163,6 +163,15 @@ async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[i
     elif not top_x:
         leaderboard_report = await create_leaderboard_report(10, class_filter)
         await interaction.response.send_message(content=leaderboard_report)
+
+@client.tree.command(name="graveyard",description="Get top 10 dead characters matching filters.")
+async def graveyard(interaction: discord.Interaction, name: typing.Optional[str], class_filter: typing.Optional[str]):
+    graveyard_report = await create_graveyard_report(name, class_filter)
+    if graveyard_report:
+        await interaction.response.send_message(content=graveyard_report)
+    else:
+        await interaction.response.send_message(content="No dead characters matching the filters were found", ephemeral=True)
+
 
 class DeleteView(discord.ui.View):
     def __init__(self, name):
@@ -384,6 +393,36 @@ async def create_leaderboard_report(top_x, class_filter):
     leaderboard_report = title_text
     leaderboard_report = "".join([leaderboard_report, leaderboard])
     return leaderboard_report
+
+async def create_graveyard_report(name, class_filter):
+    character_classes = charutils.get_all_classes()
+    class_id = None
+    title_text = "Top dead characters"
+
+    if name:
+        title_text = "Top dead characters called " + name
+    if class_filter:
+        character_class = next((character_class for character_class in character_classes if character_class.name.lower() == class_filter.lower()), None)
+        if character_class:
+            class_id = character_class.id_
+            title_text = " ".join([title_text, "with class"])
+            title_text = " ".join([title_text, character_class.name])
+
+    title_text = " ".join([title_text, "in this world:"])
+
+    members_list = client.get_all_members()
+    users_list = []
+    for member in members_list:
+        member_name = re.sub("[`>*]", "", member.display_name)
+        users_list.append({"id":member.id, "name":member_name})
+    graveyard = charutils.get_graveyard(name, users_list, class_id)
+
+    if graveyard == "":
+        return None
+
+    graveyard_report = title_text
+    graveyard_report = "".join([graveyard_report, graveyard])
+    return graveyard_report
 
 print("starting bot")
 client.run(TOKEN)

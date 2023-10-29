@@ -105,6 +105,25 @@ class Player:
         self.discord_id = discord_id
         self.character.id = character_id
 
+class DeadCharacter:
+    def __init__(
+            self,
+            id_,
+            name,
+            level,
+            class_id,
+            gearscore,
+            player_id,
+            life_length
+    ):
+        self.id_ = id_
+        self.name = name
+        self.level = level
+        self.class_id = class_id
+        self.gearscore = gearscore
+        self.player_id = player_id
+        self.life_length = life_length
+
 class Quest:
     def __init__(
             self,
@@ -172,3 +191,4 @@ class CharacterStatistics:
         self.pks = pks
         self.personal_quests = personal_quests
         self.create_timestamp = create_timestamp
+        self.delete_timestamp = delete_timestamp
