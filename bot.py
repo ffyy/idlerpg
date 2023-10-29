@@ -156,15 +156,13 @@ if DEBUG_MODE == "1":
 #TREE COMMANDS
 
 @client.tree.command(name="top",description="Get top X characters. Returns top 10 if no argument is given.") #make it prettier
-async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[int]):
+async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[int], class_filter: typing.Optional[str]):
     if top_x and top_x > 0 and top_x <= 10:
-        leaderboard_report = await create_leaderboard_report(top_x)
+        leaderboard_report = await create_leaderboard_report(top_x, class_filter)
         await interaction.response.send_message(content=leaderboard_report)
     elif not top_x:
-        leaderboard_report = await create_leaderboard_report(10)
+        leaderboard_report = await create_leaderboard_report(10, class_filter)
         await interaction.response.send_message(content=leaderboard_report)
-    else:
-        await interaction.response.send_message("You need to enter a number between 0 and 10", ephemeral=True)
 
 class DeleteView(discord.ui.View):
     def __init__(self, name):
@@ -287,15 +285,23 @@ def create_pvp_report():
     pvp_report = "".join([pvp_report, pvp_results])
     return pvp_report
 
-async def create_leaderboard_report(top_x):
+async def create_leaderboard_report(top_x, class_filter):
+    character_classes = charutils.get_all_classes()
+    class_id = None
     title_text = "Top " + str(top_x) + " characters in this world:"
+
+    if class_filter:
+        character_class = next((character_class for character_class in character_classes if character_class.name.lower() == class_filter.lower()), None)
+        if character_class:
+            class_id = character_class.id_
+            title_text = "Top " + str(top_x) + " characters of class " + character_class.name + " in this world:"
 
     members_list = client.get_all_members()
     users_list = []
     for member in members_list:
         member_name = re.sub("[`>*]", "", member.display_name)
         users_list.append({"id":member.id, "name":member_name})
-    leaderboard = charutils.get_leaderboard(top_x, users_list)
+    leaderboard = charutils.get_leaderboard(top_x, users_list, class_id)
 
     if leaderboard == "":
         title_text = "There are no characters yet."

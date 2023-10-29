@@ -244,8 +244,11 @@ def level_me_up(player_id):
     else:
         return "You don't even have a character.\nUse /register to register a new character."
 
-def get_leaderboard(top_x, users_list) -> str:
+def get_leaderboard(top_x, users_list, class_filter) -> str:
     characters = get_all_characters()
+    if class_filter:
+        characters = [character for character in characters if character.character_class.id_ == class_filter]
+
     top_characters = []
     characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
     for i, character in enumerate(characters):
