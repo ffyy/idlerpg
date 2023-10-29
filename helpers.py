@@ -2,7 +2,7 @@ import re
 
 def make_table(input) -> str:
     column_widths = []
-    RIGHT_ALIGN_EXPRESSION = "^[0-9h\.\/]+$" #used to identify cells which should be right aligned
+    RIGHT_ALIGN_EXPRESSION = "^(?:\d+(?:\.\d+)?h?|\d+\/\d+|\d+->\d+)$" #used to identify cells which should be right aligned
 
     for i,column in enumerate(input):
         column_widths.append(0)
