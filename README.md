@@ -8,7 +8,7 @@ In the idlerpg, players (Discord users) can register a character for themselves.
 
 ## Game rules
 
-TODO
+Use /rules command in Discord
 
 ## Scope
 initial scope:
@@ -24,7 +24,7 @@ planned improvements after first playtest:
 - rethink how gearscore affects rolls
 
 improvements after the second playtest:
-- character statistics
+- character statistics ✔
 - permadeath ✔
 - weekly 'raid' involving all characters in the world
 
