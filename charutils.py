@@ -105,7 +105,7 @@ def register_player(player_id, character_id):
 def get_character_by_name(name) -> Character:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("SELECT * FROM character WHERE name = ?", (name,))
+    cur.execute("SELECT * FROM character WHERE lower(name) = ?", (name.lower(),))
     db_character = cur.fetchone()
     cur.close()
     if db_character is None:
@@ -213,9 +213,10 @@ def db_character_to_character(character: CharacterDB) -> Character:
 def is_name_valid(name) -> bool:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
-    cur.execute("SELECT count(1) FROM character WHERE name = ?", (name,))
+    cur.execute("SELECT count(1) FROM character WHERE lower(name) = ?", (name.lower(),))
     count = int(cur.fetchone()[0])
-    if count > 0 or len(name) > 12 or not name.isalpha():
+    #sqlite doesn't support lower/upper for non-ascii characters, so we don't allow names with uppercase non-ascii characters to make sure case insensitive search works
+    if count > 0 or len(name) > 12 or not name.isalpha() or [c for c in name if c.isupper() and not c.isascii()]:
         return False
     else:
         return True

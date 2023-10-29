@@ -216,7 +216,7 @@ async def register(interaction: discord.Interaction, name: str):
         if (charutils.is_name_valid(name)):
             await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
         else:
-            await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 12 characters, must be unique and must include only letters.", ephemeral=True)
+            await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 12 characters, must be unique, must include only letters and no uppercase special characters.", ephemeral=True)
 
 @client.tree.command(name="find", description="Find a character. Returns your own character if no name is given.")
 async def find(interaction: discord.Interaction, name: typing.Optional[str]):
@@ -246,7 +246,7 @@ async def changename(interaction: discord.Interaction, new_name: str):
     elif character is None:
         await interaction.response.send_message(content="You don't have a character.\nUse /register to register a new character.", ephemeral=True)
     elif not charutils.is_name_valid(new_name):
-        await interaction.response.send_message(content="The name [" + new_name + "] is not valid.\nNames can be up to 12 characters, must be unique and must include only letters.", ephemeral=True)
+        await interaction.response.send_message(content="The name [" + new_name + "] is not valid.\nNames can be up to 12 characters, must include only letters and no uppercase special characters.", ephemeral=True)
     elif (character is not None) and charutils.is_name_valid(new_name):
         character.name = new_name
         charutils.update_db_character(charutils.character_to_db_character(character))
