@@ -17,9 +17,9 @@ def do():
 
     character_classes = [(1, "Thief", 1, 100, 0, 10000, 100, "Trust in your luck (1d100)"),
                          (2, "Fighter", 5, 20, 0, 10000, 100, "Solid in any situation (5d20)"),
-                         (3, "Hobbit", 5, 10, 0, 7000, 100, "Bad at everything, but starts with a magic ring (5d10)"),
-                         (4, "Elf", 5, 20, 20, 18000, 100, "Just better at everything, but levels slowly (5d20+20)"),
-                         (5, "Magic User", 1, 100, 10, 10000, 80, "Powerful but squishy (1d100+10)"),
+                         (3, "Hobbit", 5, 10, 0, 6000, 100, "Bad at everything, but starts with a magic ring (5d10)"),
+                         (4, "Elf", 5, 20, 20, 17000, 100, "Just better at everything, but levels slowly (5d20+20)"),
+                         (5, "Magic User", 1, 100, 10, 10000, 70, "Powerful but squishy (1d100+10)"),
                          (6, "Cleric", 5, 20, 0, 10000, 80, "Can heal the party but is squishy (5d20)")]
 
     print("creating new tables")
