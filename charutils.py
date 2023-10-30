@@ -393,13 +393,15 @@ def character_search(name, users_list) -> str:
     statistics_lists.append(["Quests"])
     statistics_lists.append(["Ganks"])
     statistics_lists.append(["Defences"])
-    statistics_lists.append(["P. Quests"])
+    statistics_lists.append(["Kills"])
+    statistics_lists.append(["PQ"])
     statistics_lists.append(["Created"])
     statistics_lists[0].append(str(stats.quests_won) + "/" + str(stats.quests_attempted))
     statistics_lists[1].append(str(stats.ganks_won) + "/" + str(stats.ganks_attempted))
     statistics_lists[2].append(str(stats.defences_won) + "/" + str(stats.defences_attempted))
-    statistics_lists[3].append(str(stats.personal_quests))
-    statistics_lists[4].append(str(datetime.datetime.fromtimestamp(stats.create_timestamp)))
+    statistics_lists[3].append(str(stats.pks))
+    statistics_lists[4].append(str(stats.personal_quests))
+    statistics_lists[5].append(str(datetime.datetime.fromtimestamp(stats.create_timestamp)))
 
     stats_results = make_table(statistics_lists)
 
