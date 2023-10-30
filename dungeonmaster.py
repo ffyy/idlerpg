@@ -191,9 +191,7 @@ def run_pvp_encounter() -> str:
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[1]))
         elif pvp_characters[1].current_hp <= 0:
             pvp_characters[1].current_hp = 0
-            if ganker_statistics.pks:
-                ganker_statistics.pks += 1
-            else: ganker_statistics.pks = 1
+            ganker_statistics.pks += 1
             pvp_journal[1].append(charutils.get_discord_id_by_character(pvp_characters[1]))
             charutils.reincarnate(pvp_characters[1])
             pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[1].name])
@@ -205,7 +203,6 @@ def run_pvp_encounter() -> str:
             pvp_characters[0].gear.unattuned += items_found
             charutils.update_db_gear(pvp_characters[0].gear)
             discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
-            print("discord id is: " + str(discord_id))
         #fill outcome statistics in journal
         pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
         pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
@@ -235,9 +232,7 @@ def run_pvp_encounter() -> str:
         elif pvp_characters[0].current_hp <= 0:
             pvp_journal[1].append(charutils.get_discord_id_by_character(pvp_characters[0]))
             pvp_characters[0].current_hp = 0
-            if defender_statistics.pks:
-                defender_statistics.pks += 1
-            else: defender_statistics.pks = 1
+            defender_statistics.pks += 1
             charutils.reincarnate(pvp_characters[0])
             pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
             pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
