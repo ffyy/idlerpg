@@ -204,14 +204,14 @@ def run_pvp_encounter() -> str:
             charutils.update_db_gear(pvp_characters[0].gear)
             discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
         #fill outcome statistics in journal
-        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
-        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
-        pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
-        #handle xp gain for ganker
         pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
         pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
         pvp_journal[0] = ": ".join([pvp_journal[0], str(xp_reward)])
         pvp_characters[0].current_xp += xp_reward
+        pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
+        pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
+        pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
+        #handle xp gain for ganker
         charutils.update_character_statistics(ganker_statistics)
         charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
     elif pvp_rolls[0] < pvp_rolls[1]:
