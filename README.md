@@ -21,12 +21,22 @@ initial scope:
 planned improvements after first playtest:
 - useful find/whoami command ✔
 - ascii tables instead of discord embeds ✔
-- rethink how gearscore affects rolls
+- rethink how gearscore affects rolls ❌
 
 improvements after the second playtest:
 - character statistics ✔
 - permadeath ✔
 - weekly 'raid' involving all characters in the world
+
+improvements after beta season:
+- add warlock (strong but cursed), hunter (weak but need-rolls all gear) classes
+- rework cleric
+- add death descriptions to graveyard
+- allow users to select which columns to show in reports
+- tie some sort of progression to character level
+- triggered pvp events (fight over gear, group up to gank the top character etc)
+- try if encompassing entire adventuring day in one message works better
+- randomize order of the events in the day
 
 future scope:
 - AI generated quest text & outcomes
