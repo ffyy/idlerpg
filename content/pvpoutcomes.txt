@@ -15,6 +15,7 @@
 0, got lost on the way
 0, should have stayed home instead
 0, had a strange understanding of what "the right moment" means
+0, found out how the grass tastes
 1, cheated
 1, had no trouble at all
 1, fought bravely and won
