@@ -16,6 +16,7 @@
 0, should have stayed home instead
 0, had a strange understanding of what "the right moment" means
 0, found out how the grass tastes
+0, misjudged the skill gap
 1, cheated
 1, had no trouble at all
 1, fought bravely and won
@@ -32,3 +33,9 @@
 1, proved what a seasoned murderer can do
 1, got someone else to do the deed and just took credit for it
 1, turned out to be more competent than anyone thought
+1, demonstrated superior skill
+1, employed shock and awe tactics
+1, got some help from a mysterious benefactor
+1, used loaded dice
+1, took advantage of an obscure combination of rules to become unstoppable
+1, had a better gaming chair
