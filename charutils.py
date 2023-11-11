@@ -203,6 +203,13 @@ def get_class(id) -> CharacterClass:
     character_class = CharacterClass(db_class[0], db_class[1], db_class[2], db_class[3], db_class[4], db_class[5], db_class[6], db_class[7])
     return character_class
 
+def get_character_count() -> int:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT count(id_) FROM character")
+    count = cur.fetchone()
+    return int(count[0])
+
 def get_all_classes() -> list[CharacterClass]:
     classes = []
     db = sqlite3.connect(DB_PATH)
