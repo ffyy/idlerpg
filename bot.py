@@ -24,6 +24,7 @@ if not os.path.exists(".conf"):
 
 GUILD = discord.Object(id=int(GUILD_ID))
 CHANNEL = discord.Object(id=int(CHANNEL_ID))
+DM = dungeonmaster.DungeonMaster()
 
 class RpgEngine(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -37,10 +38,10 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
-        self.run_personal_quests.start()
-        self.run_adventures.start()
-        self.run_pvp_encounters.start()
-        self.run_long_rests.start()
+        #self.run_personal_quests.start()
+        #self.run_adventures.start()
+        #self.run_pvp_encounters.start()
+        #self.run_long_rests.start()
         print(str(datetime.datetime.now()) + " - loops started")
 
     @tasks.loop(minutes=(TIMESCALE))
@@ -147,6 +148,14 @@ if DEBUG_MODE == "1":
         if interaction.user.id == ADMIN_ID:
             quest_journal = dungeonmaster.run_personal_quest()
             await interaction.response.send_message(content="**A hero did something!**\n" + quest_journal)
+        else:
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
+
+    @client.tree.command(name="randomevent",description="Array test") #testing command
+    async def randomevent(interaction: discord.Interaction):
+        if interaction.user.id == ADMIN_ID:
+            random_event = DM.choose_event()
+            await interaction.response.send_message(content=random_event)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
@@ -320,7 +329,6 @@ class RulesView(discord.ui.View):
 
     @discord.ui.select(placeholder="Rules section", options=rules_sections, max_values=1)
     async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
-        #response = next((line for line in RULES_TEXTS if line[0] == select.values[0]), "  Oops")[2:]
         match select.values[0]:
             case "0":
                 response = """
