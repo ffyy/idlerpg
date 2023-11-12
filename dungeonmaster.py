@@ -47,11 +47,11 @@ class DungeonMaster:
                 print("chose adventure")
                 return self.run_adventure()
             case 2:
-                if charutils.get_character_count() > 5:
+                if charutils.get_character_count() > 5: #in worlds with few characters, constant PvP is too volatile
                     print("chose pvp")
                     return self.run_pvp_encounter()
                 else:
-                    print("chose personal quest because of lack of characters")
+                    print("chose class quest because of lack of characters")
                     return self.run_class_quest()
             case _:
                 return EventOutcomes([],[])
@@ -62,7 +62,8 @@ class DungeonMaster:
             self.events_list.append(value)
 
     def give_quest_rewards(self, quest: Quest, event_outcomes: EventOutcomes) -> EventOutcomes:
-        """Adds rewards depending on Quest.quest_type values to the characters in Quest.party and saves the changes to database.\n
+        """Adds rewards depending on Quest.quest_type values to the characters in Quest.party and saves the changes to database.
+        Amount of XP depends on the difficulty of the quest.
 
         Arguments:
             quest: a Quest object which has been completed by complete_quest()
@@ -74,7 +75,7 @@ class DungeonMaster:
                 adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
                 charutils.update_db_character(charutils.character_to_db_character(adventurer))
         if "loot" in quest.quest_type:
-            if sum(character.character_class.id_ == 2 for character in quest.party) >= 2:
+            if sum(character.character_class.id_ == 2 for character in quest.party) >= 2: #placeholder, replace fighter with hunter class once added
                 fighters = random.sample(quest.party, 2)
                 item_name = random.choice(ITEMS)
                 description = "**Disputed item!**\n" + fighters[0].name + " and " + fighters[1].name + " both wanted the magic item and decided to fight over it."
@@ -94,7 +95,7 @@ class DungeonMaster:
         Arguments:
             dm_quest: a non-completed Quest, which has a Quest.party, Quest.difficulty, at least one Quest.type and a partially filled Quest.journal
         """
-        QUEST_ITEM_THRESHOLD = 0.8
+        QUEST_ITEM_THRESHOLD = 0.8 #if the quest is successful and the sum of party rolls is at least 80% of everyone rolling a 100, an item is guaranteed
 
         completed_quest = dm_quest
         for adventurer in dm_quest.party:
@@ -174,7 +175,6 @@ class DungeonMaster:
 
     def run_adventure(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
         """Creates a Quest object by selecting a quest hook, a difficulty, and randomly gathering a party from all characters. The quest is then resolved by the complete_quest() function.\n
-        Grants rewards to the party members depending on the outcome of the completed quest.
 
         Arguments:
             event_outcomes: if provided, will append the outcome of this event to the provided EventOutcomes object.
@@ -189,7 +189,7 @@ class DungeonMaster:
         quest = Quest(quest_type, [], [], [], 0, quest_hook, 0)
 
         if not character_ids:
-            return "I tried to run an adventure, but nobody showed up. 😢"
+            return EventOutcomes(["I tried to run an adventure, but nobody showed up. 😢"], [])
 
         if(len(character_ids)) == 1:
             quest.party.append(charutils.get_character_by_id(character_ids[0][0]))
@@ -272,7 +272,6 @@ class DungeonMaster:
         if pvp_rolls[0] >= pvp_rolls[1]:
             ganker_statistics.ganks_won += 1
             #fill outcome flavor text in journal
-            pvp_journal = " ".join([pvp_journal, "This time,"])
             pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
             pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
             #start handling loser hp loss
@@ -296,7 +295,6 @@ class DungeonMaster:
                 pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
                 items_found = randint(1, max(pvp_characters[1].gear.gearscore, 1))
                 pvp_characters[0].gear.unattuned += items_found
-                charutils.update_db_gear(pvp_characters[0].gear)
                 discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
             #fill outcome statistics in journal
             if item_reward:
@@ -313,8 +311,9 @@ class DungeonMaster:
                 pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
                 pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
                 pvp_journal = " - ".join([pvp_journal, "**Success!**"])
-            #handle xp gain for ganker
+            #handle rewards for ganker
             charutils.update_character_statistics(ganker_statistics)
+            charutils.update_db_gear(pvp_characters[0].gear)
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
         elif pvp_rolls[0] < pvp_rolls[1]:
             defender_statistics.defences_won += 1
@@ -343,7 +342,6 @@ class DungeonMaster:
                 pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
                 items_found = randint(1, max(pvp_characters[0].gear.gearscore, 1))
                 pvp_characters[1].gear.unattuned += items_found
-                charutils.update_db_gear(pvp_characters[1].gear)
             #fill outcome statistics in journal
             if item_reward:
                 pvp_journal = "\n".join([pvp_journal, pvp_characters[1].name])
@@ -351,11 +349,11 @@ class DungeonMaster:
                 pvp_journal = " ".join([pvp_journal, item_reward])
                 pvp_journal = "".join([pvp_journal, "!"])
                 pvp_characters[1].gear.unattuned += 1
-                charutils.update_db_gear(pvp_characters[1].gear)
             else:
                 pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
                 pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
                 pvp_journal = " - ".join([pvp_journal, "**Failure!**"])
+            charutils.update_db_gear(pvp_characters[1].gear)
             charutils.update_character_statistics(defender_statistics)
 
         pvp_report_lists = []
@@ -388,12 +386,14 @@ class DungeonMaster:
 
     def run_class_quest(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
         """Chooses a class from among classes that have at least one registered character. Generates a party of 1-3 characters of this class and awards free XP to all characters.\n
-        If 2 fighters are chosen, they will instead duel for experience.
+        If 2 fighters are chosen, one of them will fight the other for experience and honor.
 
         Arguments:
             event_outcomes: if provided, appends the outcome of this event to the provided EventOutcomes
         """
         all_characters = charutils.get_all_characters()
+        if not all_characters:
+            return EventOutcomes(["Something super awful happened because this world has no heroes yet."], [])
         chosen_class = random.choice(all_characters).character_class
         potential_characters = [character for character in all_characters if character.character_class.id_ == chosen_class.id_]
         party_size = min(random.randint(1, len(potential_characters)), 3)
