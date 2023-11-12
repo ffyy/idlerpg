@@ -65,8 +65,8 @@ client = RpgEngine(intents=intents)
 
 # DEBUG COMMANDS
 if DEBUG_MODE == "1":
-    @client.tree.command(name="groupfight",description="Run a group fight") #testing command
-    async def groupfight(interaction: discord.Interaction):
+    @client.tree.command(name="gangbang",description="Run a group fight") #testing command
+    async def gangbang(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
             await interaction.response.send_message(content="Running a group fight")
             event_outcomes = DM.run_group_pvp()
