@@ -35,11 +35,11 @@ improvements after beta season:
 - allow users to select which columns to show in reports
 - tie some sort of progression to character level
 - triggered pvp events (fight over gear, group up to gank the top character etc)
-- try if encompassing entire adventuring day in one message works better
-- randomize order of the events in the day
+- try if encompassing entire adventuring day in one message works better ❌
+- randomize order of the events in the day ✔
 
 future scope:
-- AI generated quest text & outcomes
+- AI generated quest text & outcomes ❌
 - different challenge types
 - more classes ✔
 - subclasses (better at some challenge type)
