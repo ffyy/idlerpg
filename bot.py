@@ -38,103 +38,25 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
-        #self.run_personal_quests.start()
-        #self.run_adventures.start()
-        #self.run_pvp_encounters.start()
-        #self.run_long_rests.start()
+        self.run_events.start()
         print(str(datetime.datetime.now()) + " - loops started")
 
     @tasks.loop(minutes=(TIMESCALE))
-    async def run_adventures(self):
-        print(str(datetime.datetime.now()) + " - running adventure " + str(self.run_adventures.current_loop))
+    async def run_events(self):
+        print(str(datetime.datetime.now()) + " - running a random event")
         channel = self.get_channel(CHANNEL.id)
-        adventure_report = create_adventure_report()
-        await channel.send(content=adventure_report[0])
-        if len(adventure_report[1]) > 0:
-            death_notice = ""
-            users_generator = client.get_all_members()
-            users_list = [] #creating a new list because client.get_all_members() can only be iterated through once, but we need to do it several times
-            for user in users_generator:
-                users_list.append(user)
-            for discord_id in adventure_report[1]:
-                for member in users_list:
-                    if int(member.id) == int(discord_id):
-                        user = await client.fetch_user(discord_id)
-                        death_notice = " ".join([death_notice, user.mention])
-            death_notice = " ".join([death_notice, "your character died and was reincarnated."])
-            await channel.send(content=death_notice)
+        event_outcomes = DM.choose_and_run_event()
+        await send_event_messages(channel, event_outcomes)
 
-    @run_adventures.before_loop
-    async def before_adventuring(self):
-        if self.run_adventures.current_loop == 0:
-            sleep_time = TIMESCALE*60//2 #half of timescale in seconds
-            print(str(self.run_adventures) + " waiting until start: " + str(sleep_time))
+    @run_events.before_loop
+    async def before_running_events(self):
+        if self.run_events.current_loop == 0:
+            sleep_time = 30 #wait 30 seconds before running the first event
+            print(str(datetime.datetime.now()) + " waiting until starting events: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
         else:
             await self.wait_until_ready()
-
-    @tasks.loop(minutes=TIMESCALE)
-    async def run_long_rests(self):
-        print(str(datetime.datetime.now()) + " - running rest " + str(self.run_long_rests.current_loop))
-        channel = self.get_channel(CHANNEL.id)
-        rest_report = create_rest_report()
-        await channel.send(content=rest_report)
-
-    @run_long_rests.before_loop
-    async def before_resting(self):
-        if self.run_long_rests.current_loop == 0:
-            sleep_time = TIMESCALE*60 #timescale in seconds
-            print(str(self.run_long_rests) + " waiting until start: " + str(sleep_time))
-            await sleep(sleep_time)
-            await self.wait_until_ready()
-        else:
-            await self.wait_until_ready()
-
-    @tasks.loop(minutes=TIMESCALE)
-    async def run_pvp_encounters(self):
-        print(str(datetime.datetime.now()) + " - running pvp " + str(self.run_pvp_encounters.current_loop))
-        channel = self.get_channel(CHANNEL.id)
-        pvp_report = create_pvp_report()
-        await channel.send(content=pvp_report[0])
-        if len(pvp_report[1]) > 0:
-            death_notice = ""
-            users_list = client.get_all_members()
-            for discord_id in pvp_report[1]:
-                for member in users_list:
-                    if int(member.id) == int(discord_id):
-                        user = await client.fetch_user(discord_id)
-                        death_notice = " ".join([death_notice, user.mention])
-            death_notice = " ".join([death_notice, "your character died and was reincarnated."])
-            await channel.send(content=death_notice)
-
-    @run_pvp_encounters.before_loop
-    async def before_pvp(self):
-        if self.run_pvp_encounters.current_loop == 0:
-            sleep_time = int((TIMESCALE*60)*3/4) #timescale in seconds
-            print(str(self.run_pvp_encounters) + " waiting until start: " + str(sleep_time))
-            await sleep(sleep_time)
-            await self.wait_until_ready()
-        else:
-            await self.wait_until_ready()
-
-    @tasks.loop(minutes=TIMESCALE)
-    async def run_personal_quests(self):
-        print(str(datetime.datetime.now()) + " - running personal quest " + str(self.run_personal_quests.current_loop))
-        channel = self.get_channel(CHANNEL.id)
-        personal_quest_content = dungeonmaster.run_personal_quest()
-        await channel.send(content="**A hero did something!**\n" + personal_quest_content)
-
-    @run_personal_quests.before_loop
-    async def before_personal_quest(self):
-        if self.run_personal_quests.current_loop == 0:
-            sleep_time = int((TIMESCALE*60)/4) #timescale in seconds
-            print(str(self.run_personal_quests) + " waiting until start: " + str(sleep_time))
-            await sleep(sleep_time)
-            await self.wait_until_ready()
-        else:
-            await self.wait_until_ready()
-
 
 intents = discord.Intents.default()
 intents.members = True
@@ -146,62 +68,45 @@ if DEBUG_MODE == "1":
     @client.tree.command(name="personalquest",description="Run a personal quest") #testing command
     async def personalquest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            quest_journal = dungeonmaster.run_personal_quest()
-            await interaction.response.send_message(content="**A hero did something!**\n" + quest_journal)
+            await interaction.response.send_message(content="Running a personal quest")
+            event_outcomes = DM.run_personal_quest()
+            await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
-    @client.tree.command(name="randomevent",description="Array test") #testing command
+    @client.tree.command(name="randomevent",description="Run a random event") #testing command
     async def randomevent(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            random_event = DM.choose_event()
-            await interaction.response.send_message(content=random_event)
+            await interaction.response.send_message("Running a random event")
+            event_outcomes = DM.choose_and_run_event()
+            await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
     @client.tree.command(name="adventure",description="Run an adventure") #testing command
     async def adventure(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            adventure_report = create_adventure_report()
-            await interaction.response.send_message(content=adventure_report[0])
-            if len(adventure_report[1]) > 0:
-                channel = interaction.channel
-                death_notice = ""
-                users_generator = client.get_all_members()
-                users_list = [] #creating a new list because client.get_all_members() can only be iterated through once, but we need to do it several times
-                for user in users_generator:
-                    users_list.append(user)
-                for discord_id in adventure_report[1]:
-                    for member in users_list:
-                        if int(member.id) == int(discord_id):
-                            print("found match")
-                            user = await client.fetch_user(discord_id)
-                            death_notice = " ".join([death_notice, user.mention])
-                        else:
-                            print("no match - " + str(member.id) + " / " + str(discord_id))
-                death_notice = " ".join([death_notice, "your character died and was reincarnated."])
-                await channel.send(content=death_notice)
+            await interaction.response.send_message("Running Adventure")
+            event_outcomes = DM.run_adventure()
+            await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
     @client.tree.command(name="pvp",description="Run a PvP encounter") #testing command
     async def pvp(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            pvp_report = create_pvp_report()
-            await interaction.response.send_message(content=pvp_report[0])
-            if len(pvp_report[1]) > 0: #this is broken
-                for discord_id in pvp_report[1]:
-                    channel = interaction.channel
-                    user = await client.fetch_user(discord_id)
-                    if user: await channel.send(f"{user.mention} rip your character bro")
+            await interaction.response.send_message("Running PvP")
+            event_outcomes = DM.run_pvp_encounter()
+            await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
     @client.tree.command(name="rest",description="Take a long rest") #testing command
     async def rest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            rest_report = create_rest_report()
-            await interaction.response.send_message(content=rest_report)
+            await interaction.response.send_message("Running a long rest")
+            event_outcomes = DM.run_long_rest()
+            await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
@@ -390,39 +295,7 @@ In the PvP encounter, the two characters roll off directly against each other.
 async def rules(interaction: discord.Interaction):
     await interaction.response.send_message("Choose a section of rules to read.", view=RulesView(), ephemeral=True)
 
-#LOOP FUNCTIONS
-def create_rest_report():
-    rest_results = dungeonmaster.run_long_rest()
-    title_text = "**The adventurers took a long rest.**\n"
-    report_fluff = "During the night, they thought about experiences they had had during the day and attuned new magic items. Character statistics in the morning:"
-    if rest_results == "":
-        report_fluff = "After sitting down to rest they found out that they weren't all that tired, and just kept going without leveling anything up."
-
-    rest_report = title_text
-    rest_report = "".join([rest_report, report_fluff])
-    rest_report = "".join([rest_report, rest_results])
-
-    return rest_report
-
-def create_adventure_report():
-    quest_results = dungeonmaster.run_adventure()
-    title_text = "**An epic adventure was had!**\n"
-
-    adventure_report = [title_text, quest_results[1]]
-    adventure_report[0] = "".join([adventure_report[0], quest_results[0]])
-
-    return adventure_report
-
-def create_pvp_report():
-    pvp_results = dungeonmaster.run_pvp_encounter()
-    title_text = "**Heroes fighting heroes!**\n"
-
-    pvp_report = [title_text, []]
-    pvp_report[0] = "".join([pvp_report[0], pvp_results[0]])
-    if len(pvp_results[1]) > 0:
-        pvp_report[1] = pvp_results[1]
-    return pvp_report
-
+#BOT FUNCTIONS
 async def create_leaderboard_report(top_x, class_filter):
     character_classes = charutils.get_all_classes()
     class_id = None
@@ -477,6 +350,23 @@ async def create_graveyard_report(name, class_filter):
     graveyard_report = title_text
     graveyard_report = "".join([graveyard_report, graveyard])
     return graveyard_report
+
+async def send_event_messages(channel, event_outcomes):
+    for message in event_outcomes.outcome_messages:
+        await channel.send(content=message)
+    if event_outcomes.deaths:
+        death_notice = ""
+        users_generator = client.get_all_members()
+        users_list = [] #creating a new list because client.get_all_members() can only be iterated through once, but we need to do it several times
+        for user in users_generator:
+            users_list.append(user)
+        for discord_id in event_outcomes.deaths:
+            for member in users_list:
+                if int(member.id) == int(discord_id):
+                    user = await client.fetch_user(discord_id)
+                    death_notice = " ".join([death_notice, user.mention])
+        death_notice = " ".join([death_notice, "your character died and was reincarnated."])
+        await channel.send(content=death_notice)
 
 print("starting bot")
 client.run(TOKEN)

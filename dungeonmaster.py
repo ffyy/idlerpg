@@ -11,15 +11,29 @@ PVP_OUTCOMES = open("content/pvpoutcomes.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
 DEFAULT_EVENTS_LIST = [0, 1, 2]
 
+class EventOutcomes:
+    def __init__(
+            self,
+            outcome_messages: list[str],
+            deaths: list[str]
+            ):
+        self.outcome_messages = outcome_messages
+        self.deaths = deaths
+
 class DungeonMaster:
     def __init__(
             self):
         self.events_list = []
-        self.initialize_list()
+        self.initialize_events_list()
 
-    def choose_event(self):
+    def choose_and_run_event(self) -> EventOutcomes:
+        """Randomly chooses an event type from the list of remaining event types before a long rest. Once triggered, the event type is removed from the list.\n
+        If all event types have been removed from the list, a run_long_rest() is triggered and the remaining events list is reset to the list defined in DEFAULT_EVENTS_LIST.\n
+        The PvP event is only run if there are more than 5 living characters in the world, otherwise another class quest is run.
+        """
         if not self.events_list:
-            self.initialize_list()
+            print("out of events, running long rest")
+            self.initialize_events_list()
             return self.run_long_rest()
 
         chosen_event = random.choice(self.events_list)
@@ -27,29 +41,59 @@ class DungeonMaster:
 
         match chosen_event:
             case 0:
+                print("chose personal quest")
                 return self.run_personal_quest()
             case 1:
+                print("chose adventure")
                 return self.run_adventure()
             case 2:
-                return self.run_pvp_encounter()
+                if charutils.get_character_count() > 5:
+                    print("chose pvp")
+                    return self.run_pvp_encounter()
+                else:
+                    print("chose personal quest because of lack of characters")
+                    return self.run_personal_quest()
             case _:
-                return "Something super fucky happened"
+                return EventOutcomes([],[])
 
-    def initialize_list(self):
+    def initialize_events_list(self):
+        self.events_list = []
         for value in DEFAULT_EVENTS_LIST:
             self.events_list.append(value)
 
-    def give_quest_rewards(self, quest: Quest):
+    def give_quest_rewards(self, quest: Quest, event_outcomes: EventOutcomes) -> EventOutcomes:
+        """Adds rewards depending on Quest.quest_type values to the characters in Quest.party and saves the changes to database.\n
+
+        Arguments:
+            quest: a Quest object which has been completed by complete_quest()
+            event_outcomes: an existing EventOutcomes object is required as this should be called only as a result of a successful quest.
+                If giving out rewards triggers an additional event, the outcome of the additional event will be appended to the provided EventOutcomes object.
+        """
         if "experience" in quest.quest_type:
             for adventurer in quest.party:
                 adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
                 charutils.update_db_character(charutils.character_to_db_character(adventurer))
         if "loot" in quest.quest_type:
-            carry_index = quest.party_rolls.index(max(quest.party_rolls))
-            quest.party[carry_index].gear.unattuned += 1
-            charutils.update_db_gear(quest.party[carry_index].gear)
+            if sum(character.character_class.id_ == 2 for character in quest.party) >= 2:
+                fighters = random.sample(quest.party, 2)
+                item_name = random.choice(ITEMS)
+                description = "**Disputed item!**\n" + fighters[0].name + " and " + fighters[1].name + " both wanted the magic item and decided to fight over it."
+                event_outcomes = self.run_pvp_encounter(event_outcomes, fighters, item_name, description)
+            else:
+                carry_index = quest.party_rolls.index(max(quest.party_rolls))
+                quest.party[carry_index].gear.unattuned += 1
+                charutils.update_db_gear(quest.party[carry_index].gear)
 
-    def run_quest(self, dm_quest: Quest) -> Quest:
+        return event_outcomes
+
+    def complete_quest(self, dm_quest: Quest) -> Quest:
+        """Completes the provided Quest object by having all Character objects in the Quest.party attribute roll dice.\n
+        If the sum of the party rolls is at least as high as the quest difficulty, the quest is successful.\n
+        Always awards XP on success, may award loot on success depending on the difficulty and sum of the party rolls.
+
+        Arguments:
+            dm_quest: a non-completed Quest, which has a Quest.party, Quest.difficulty, at least one Quest.type and a partially filled Quest.journal
+        """
         QUEST_ITEM_THRESHOLD = 0.8
 
         completed_quest = dm_quest
@@ -68,45 +112,47 @@ class DungeonMaster:
                 character_statistics.quests_won += 1
                 charutils.update_character_statistics(character_statistics)
             completed_quest.outcome = 1
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Luckily,"])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "Luckily,"])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
             healer = next((hero for hero in completed_quest.party if hero.character_class.id_ == 6), None)
             if healer:
                 hp_gain = random.randint(3,24) + 4
                 for character in completed_quest.party:
                     character.current_hp = min(character.current_hp + hp_gain, character.character_class.max_hp)
                     charutils.update_db_character(charutils.character_to_db_character(character))
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Thanks to"])
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, healer.name])
-                completed_quest.quest_journal = ', '.join([completed_quest.quest_journal, "everyone was healed for"])
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(hp_gain)])
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "HP."])
+                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "Thanks to"])
+                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, healer.name])
+                completed_quest.quest_journal = ", ".join([completed_quest.quest_journal, "everyone was healed for"])
+                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, str(hp_gain)])
+                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "HP."])
             if "loot" in dm_quest.quest_type:
-                carry_index = completed_quest.party_rolls.index(max(completed_quest.party_rolls))
-                item_name = random.choice(ITEMS)
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, completed_quest.party[carry_index].name])
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "also found"])
-                if item_name[0] in "aeoiu":
-                    completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "an"])
+                if sum(character.character_class.id_ == 2 for character in dm_quest.party) >= 2:
+                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "A magic item was also found, but it was contested."])
                 else:
-                    completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "a"])
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, item_name])
-                completed_quest.quest_journal = ''.join([completed_quest.quest_journal, "!"])
+                    carry_index = completed_quest.party_rolls.index(max(completed_quest.party_rolls))
+                    item_name = random.choice(ITEMS)
+                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, completed_quest.party[carry_index].name])
+                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "also found"])
+                    if item_name[0] in "aeoiu":
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "an"])
+                    else:
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "a"])
+                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, item_name])
+                    completed_quest.quest_journal = "".join([completed_quest.quest_journal, "!"])
             if "experience" in dm_quest.quest_type:
-                completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, "XP reward:"])
-                completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
-            completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
-            completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
-            completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Success!**"])
-            self.give_quest_rewards(completed_quest)
+                completed_quest.quest_journal = "\n".join([completed_quest.quest_journal, "XP reward:"])
+                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, str(int(10000*(completed_quest.quest_difficulty/party_max_roll)))])
+            completed_quest.quest_journal = "\n".join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
+            completed_quest.quest_journal = "/".join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
+            completed_quest.quest_journal = " - ".join([completed_quest.quest_journal, "**Success!**"])
         else:
             hp_loss = int(100 - (sum(completed_quest.party_rolls) / dm_quest.quest_difficulty) * 100)
             completed_quest.outcome = 0
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Unfortunately,"])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "Everyone involved lost"])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, str(hp_loss)])
-            completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "HP."])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "Unfortunately,"])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, random.choice(FAILURE_DESCRIPTIONS)])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "Everyone involved lost"])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, str(hp_loss)])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "HP."])
             for character in completed_quest.party:
                 character_statistics = charutils.get_character_statistics(character)
                 character_statistics.quests_attempted += 1
@@ -118,21 +164,27 @@ class DungeonMaster:
                     character.current_hp = 0
                     completed_quest.death_notices.append(charutils.get_discord_id_by_character(character))
                     charutils.reincarnate(character)
-                    completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, character.name])
-                    completed_quest.quest_journal = ' '.join([completed_quest.quest_journal, "died and was reincarnated at level 0!"])
-            completed_quest.quest_journal = '\n'.join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
-            completed_quest.quest_journal = '/'.join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
-            completed_quest.quest_journal = ' - '.join([completed_quest.quest_journal, "**Failure!**"])
+                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, character.name])
+                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "died and was reincarnated at level 0!"])
+            completed_quest.quest_journal = "\n".join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
+            completed_quest.quest_journal = "/".join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
+            completed_quest.quest_journal = " - ".join([completed_quest.quest_journal, "**Failure!**"])
 
         return completed_quest
 
-    def run_adventure(self) -> str:
+    def run_adventure(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
+        """Creates a Quest object by selecting a quest hook, a difficulty, and randomly gathering a party from all characters. The quest is then resolved by the complete_quest() function.\n
+        Grants rewards to the party members depending on the outcome of the completed quest.
+
+        Arguments:
+            event_outcomes: if provided, will append the outcome of this event to the provided EventOutcomes object.
+        """
         character_ids = charutils.get_character_ids()
 
-        QUEST_TYPES = ["experience", "loot"]
+        #SUPPORTED_QUEST_TYPES = ["experience", "loot"]
         quest_type = ["experience"]
 
-        quest_hook = ' '.join(["The heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
+        quest_hook = " ".join(["**An epic adventure was had!**\nThe heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 
         quest = Quest(quest_type, [], [], [], 0, quest_hook, 0)
 
@@ -149,7 +201,7 @@ class DungeonMaster:
         difficulty = random.randint(20,100)*len(quest.party)
         quest.quest_difficulty = difficulty
 
-        completed_quest = self.run_quest(quest)
+        completed_quest = self.complete_quest(quest)
 
         completed_quest_lists = []
         completed_quest_lists.append(["Hero"])
@@ -170,21 +222,38 @@ class DungeonMaster:
         quest_table = make_table(completed_quest_lists)
 
         completed_quest.quest_journal = "".join([completed_quest.quest_journal, quest_table])
+        if event_outcomes:
+            event_outcomes.outcome_messages.append(completed_quest.quest_journal)
+            event_outcomes.deaths = completed_quest.death_notices
+        else:
+            event_outcomes = EventOutcomes([completed_quest.quest_journal], completed_quest.death_notices)
 
-        return [completed_quest.quest_journal, completed_quest.death_notices]
+        if completed_quest.outcome == 1:
+            event_outcomes = self.give_quest_rewards(completed_quest, event_outcomes)
 
-    def run_pvp_encounter(self) -> str:
-        all_characters = charutils.get_all_characters()
-        #if there are too few characters, DM should actually run a personal quest instead of the volatile pvp
-        if len(all_characters) < 6:
-            return ["I tried to incite violence, but there weren't enough characters around for PvP.",""]
+        return event_outcomes
 
-        all_characters.sort(key=lambda character:character.level)
-        i_ganker = randint(0, len(all_characters)//2)
-        pvp_characters = []
-        pvp_characters.append(all_characters[i_ganker])
-        del all_characters[0:i_ganker+1]
-        pvp_characters.append(random.choice(all_characters))
+    def run_pvp_encounter(self, event_outcomes: EventOutcomes=None, fighters: list[Character]=None, item_reward: str=None, description: str=None) -> EventOutcomes:
+        """ Runs a PvP encounter (roll-off) between two characters. The character with the lower roll loses current_hp and may die.\n
+
+        Arguments:
+            event_outcomes: If provided, appends the results to the provided EventOutcomes object.
+            fighters: If provided, the first two characters in that list will fight.
+            item_reward: If provided, the winner will be awarded +1 GS instead of XP and the journal will mention the item_reward by name.
+            description: If provided, the provided description will be used in the Discord message instead of the default PvP description.
+        """
+        if fighters:
+            pvp_characters = fighters
+            pvp_journal = description
+        else:
+            all_characters = charutils.get_all_characters()
+            all_characters.sort(key=lambda character:character.level)
+            i_ganker = randint(0, len(all_characters)//2)
+            pvp_characters = []
+            pvp_characters.append(all_characters[i_ganker])
+            del all_characters[0:i_ganker+1]
+            pvp_characters.append(random.choice(all_characters))
+            pvp_journal = "**Heroes fighting heroes!**\n" + pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + "."
 
         ganker_statistics = charutils.get_character_statistics(pvp_characters[0])
         defender_statistics = charutils.get_character_statistics(pvp_characters[1])
@@ -192,86 +261,101 @@ class DungeonMaster:
         defender_statistics.defences_attempted += 1
         charutils.update_character_statistics(ganker_statistics)
         charutils.update_character_statistics(defender_statistics)
+        deaths = []
 
         pvp_rolls = []
         for character in pvp_characters:
             character_roll = character.roll_dice() + character.gear.gearscore
             pvp_rolls.append(character_roll)
-        pvp_journal = [pvp_characters[0].name + " waited for the right moment and attacked " + pvp_characters[1].name + ".", []]
         xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
         hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
         if pvp_rolls[0] >= pvp_rolls[1]:
             ganker_statistics.ganks_won += 1
             #fill outcome flavor text in journal
-            pvp_journal[0] = " ".join([pvp_journal[0], "This time,"])
-            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-            pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
+            pvp_journal = " ".join([pvp_journal, "This time,"])
+            pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+            pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "1"])[2:]])
             #start handling loser hp loss
             pvp_characters[1].current_hp -= hp_loss
-            pvp_journal[0] = ". ".join([pvp_journal[0], pvp_characters[1].name])
-            pvp_journal[0] = " ".join([pvp_journal[0], "lost"])
-            pvp_journal[0] = " ".join([pvp_journal[0], str(hp_loss)])
-            pvp_journal[0] = " ".join([pvp_journal[0], "HP."])
+            pvp_journal = ". ".join([pvp_journal, pvp_characters[1].name])
+            pvp_journal = " ".join([pvp_journal, "lost"])
+            pvp_journal = " ".join([pvp_journal, str(hp_loss)])
+            pvp_journal = " ".join([pvp_journal, "HP."])
             #start handling loser death
             if pvp_characters[1].current_hp > 0:
                 charutils.update_db_character(charutils.character_to_db_character(pvp_characters[1]))
             elif pvp_characters[1].current_hp <= 0:
                 pvp_characters[1].current_hp = 0
                 ganker_statistics.pks += 1
-                pvp_journal[1].append(charutils.get_discord_id_by_character(pvp_characters[1]))
+                deaths.append(charutils.get_discord_id_by_character(pvp_characters[1]))
                 charutils.reincarnate(pvp_characters[1])
-                pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[1].name])
-                pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
+                pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
+                pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
                 #start handling loot
-                pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-                pvp_journal[0] = " ".join([pvp_journal[0], "looted a few magic items."])
+                pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+                pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
                 items_found = randint(1, max(pvp_characters[1].gear.gearscore, 1))
                 pvp_characters[0].gear.unattuned += items_found
                 charutils.update_db_gear(pvp_characters[0].gear)
                 discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
             #fill outcome statistics in journal
-            pvp_journal[0] = "\n".join([pvp_journal[0], "XP reward for"])
-            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-            pvp_journal[0] = ": ".join([pvp_journal[0], str(xp_reward)])
-            pvp_characters[0].current_xp += xp_reward
-            pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
-            pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
-            pvp_journal[0] = " - ".join([pvp_journal[0], "**Success!**"])
+            if item_reward:
+                pvp_journal = "\n".join([pvp_journal, pvp_characters[0].name])
+                pvp_journal = " ".join([pvp_journal, "ended up getting the"])
+                pvp_journal = " ".join([pvp_journal, item_reward])
+                pvp_journal = "".join([pvp_journal, "!"])
+                pvp_characters[0].gear.unattuned += 1
+            else:
+                pvp_journal = "\n".join([pvp_journal, "XP reward for"])
+                pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+                pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
+                pvp_characters[0].current_xp += xp_reward
+                pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
+                pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
+                pvp_journal = " - ".join([pvp_journal, "**Success!**"])
             #handle xp gain for ganker
             charutils.update_character_statistics(ganker_statistics)
             charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
         elif pvp_rolls[0] < pvp_rolls[1]:
             defender_statistics.defences_won += 1
             #fill outcome flavor text in journal
-            pvp_journal[0] = " ".join([pvp_journal[0], "Unfortunately,"])
-            pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-            pvp_journal[0] = "".join([pvp_journal[0], random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
+            pvp_journal = " ".join([pvp_journal, "Unfortunately,"])
+            pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+            pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "0"])[2:]])
             #start handling loser hp loss
             pvp_characters[0].current_hp -= hp_loss
-            pvp_journal[0] = ". ".join([pvp_journal[0], pvp_characters[0].name])
-            pvp_journal[0] = " ".join([pvp_journal[0], "lost"])
-            pvp_journal[0] = " ".join([pvp_journal[0], str(hp_loss)])
-            pvp_journal[0] = " ".join([pvp_journal[0], "HP."])
+            pvp_journal = ". ".join([pvp_journal, pvp_characters[0].name])
+            pvp_journal = " ".join([pvp_journal, "lost"])
+            pvp_journal = " ".join([pvp_journal, str(hp_loss)])
+            pvp_journal = " ".join([pvp_journal, "HP."])
             #start handling loser death
             if pvp_characters[0].current_hp > 0:
                 charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
             elif pvp_characters[0].current_hp <= 0:
-                pvp_journal[1].append(charutils.get_discord_id_by_character(pvp_characters[0]))
+                deaths.append(charutils.get_discord_id_by_character(pvp_characters[0]))
                 pvp_characters[0].current_hp = 0
                 defender_statistics.pks += 1
                 charutils.reincarnate(pvp_characters[0])
-                pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[0].name])
-                pvp_journal[0] = " ".join([pvp_journal[0], "died and was reincarnated at level 0!"])
+                pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+                pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
                 #start handling loot
-                pvp_journal[0] = " ".join([pvp_journal[0], pvp_characters[1].name])
-                pvp_journal[0] = " ".join([pvp_journal[0], "looted a few magic items."])
+                pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
+                pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
                 items_found = randint(1, max(pvp_characters[0].gear.gearscore, 1))
                 pvp_characters[1].gear.unattuned += items_found
                 charutils.update_db_gear(pvp_characters[1].gear)
             #fill outcome statistics in journal
-            pvp_journal[0] = "\n".join([pvp_journal[0], str(pvp_rolls[0])])
-            pvp_journal[0] = "/".join([pvp_journal[0], str(pvp_rolls[1])])
-            pvp_journal[0] = " - ".join([pvp_journal[0], "**Failure!**"])
+            if item_reward:
+                pvp_journal = "\n".join([pvp_journal, pvp_characters[1].name])
+                pvp_journal = " ".join([pvp_journal, "ended up getting the"])
+                pvp_journal = " ".join([pvp_journal, item_reward])
+                pvp_journal = "".join([pvp_journal, "!"])
+                pvp_characters[1].gear.unattuned += 1
+                charutils.update_db_gear(pvp_characters[1].gear)
+            else:
+                pvp_journal = "\n".join([pvp_journal, str(pvp_rolls[0])])
+                pvp_journal = "/".join([pvp_journal, str(pvp_rolls[1])])
+                pvp_journal = " - ".join([pvp_journal, "**Failure!**"])
             charutils.update_character_statistics(defender_statistics)
 
         pvp_report_lists = []
@@ -290,14 +374,23 @@ class DungeonMaster:
             pvp_report_lists[4].append(make_hp_bar(fighter.current_hp, fighter.character_class.max_hp))
             pvp_report_lists[5].append(str(pvp_rolls[i]))
 
-        pvp_journal[0] = "".join([pvp_journal[0], (make_table(pvp_report_lists))])
-        return pvp_journal
+        pvp_journal = "".join([pvp_journal, (make_table(pvp_report_lists))])
 
-    def run_personal_quest(self) -> str:
+        if event_outcomes:
+            event_outcomes.outcome_messages.append(pvp_journal)
+            for discord_id in deaths:
+                if discord_id not in event_outcomes.deaths:
+                    event_outcomes.deaths.append(discord_id)
+        else:
+            event_outcomes = EventOutcomes([pvp_journal], deaths)
+
+        return event_outcomes
+
+    def run_personal_quest(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
         hero = random.choice(charutils.get_all_characters())
         personal_quest_hook = random.choice([line for line in PERSONAL_QUESTS if line[0] == str(hero.character_class.id_)])[2:]
         xp_reward = randint(500, 2000)
-        personal_quest_journal = ""
+        personal_quest_journal = "**A hero did something!**\n"
         personal_quest_journal = "".join([personal_quest_journal, hero.name])
         personal_quest_journal = " ".join([personal_quest_journal, "the"])
         personal_quest_journal = " ".join([personal_quest_journal, hero.character_class.name])
@@ -312,9 +405,19 @@ class DungeonMaster:
         charutils.update_character_statistics(statistics)
         charutils.update_db_character(charutils.character_to_db_character(hero))
 
-        return personal_quest_journal
+        if event_outcomes:
+            event_outcomes.outcome_messages.append(personal_quest_journal)
+        else:
+            event_outcomes = EventOutcomes([personal_quest_journal], [])
 
-    def run_long_rest(self) -> str:
+        return event_outcomes
+
+    def run_long_rest(self) -> EventOutcomes:
+        """Runs the Character.take_long_rest() function for all living characters. If level or gearscore changes for at least one character as a result of this,
+        returns an EventOutcomes object which includes a message with the results of the long rest.\n
+        If there are no changes in level or gearscore and at least two living characters exist in the world, will trigger a PvP encounter between two random characters.\n
+        Doesn't accept EventOutcomes as an argument because resting should not be triggered from some other event.
+        """
         old_characters = charutils.get_all_characters()
         rested_characters = []
         day_report = []
@@ -339,7 +442,12 @@ class DungeonMaster:
                 day_report.append(personal_report)
 
         if len(day_report) == 0:
-            return ""
+            if charutils.get_character_count() >= 2:
+                fighters = random.sample(charutils.get_all_characters(), 2)
+                description = "**Violence in the night!**\nA tense situation developed, as the adventurers decided to take a rest, but weren't all that tired. " + fighters[0].name + " ended up attacking " + fighters[1].name + ", which surely livened up the evening."
+                event_outcomes = self.run_pvp_encounter(None, fighters, None, description)
+            else:
+                event_outcomes = EventOutcomes([],[])
         else:
             table_lists = []
             table_lists.append(["Character"])
@@ -353,6 +461,9 @@ class DungeonMaster:
                 table_lists[2].append(str(character.gearscore_result))
                 table_lists[3].append(str(character.xp_result))
 
+            rest_message = "**The adventurers sat down to take a long rest.**\nDuring the night, they thought about experiences they had had during the day and attuned new magic items. Character statistics in the morning:"
             string_day_report = make_table(table_lists)
+            rest_message = "".join([rest_message, string_day_report])
+            event_outcomes = EventOutcomes([rest_message], [])
 
-            return string_day_report
+        return event_outcomes
