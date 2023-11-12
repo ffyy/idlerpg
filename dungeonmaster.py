@@ -42,7 +42,7 @@ class DungeonMaster:
         match chosen_event:
             case 0:
                 print("chose personal quest")
-                return self.run_personal_quest()
+                return self.run_class_quest()
             case 1:
                 print("chose adventure")
                 return self.run_adventure()
@@ -52,7 +52,7 @@ class DungeonMaster:
                     return self.run_pvp_encounter()
                 else:
                     print("chose personal quest because of lack of characters")
-                    return self.run_personal_quest()
+                    return self.run_class_quest()
             case _:
                 return EventOutcomes([],[])
 
@@ -386,29 +386,60 @@ class DungeonMaster:
 
         return event_outcomes
 
-    def run_personal_quest(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
-        hero = random.choice(charutils.get_all_characters())
-        personal_quest_hook = random.choice([line for line in PERSONAL_QUESTS if line[0] == str(hero.character_class.id_)])[2:]
+    def run_class_quest(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
+        """Chooses a class from among classes that have at least one registered character. Generates a party of 1-3 characters of this class and awards free XP to all characters.\n
+        If 2 fighters are chosen, they will instead duel for experience.
+
+        Arguments:
+            event_outcomes: if provided, appends the outcome of this event to the provided EventOutcomes
+        """
+        all_characters = charutils.get_all_characters()
+        chosen_class = random.choice(all_characters).character_class
+        potential_characters = [character for character in all_characters if character.character_class.id_ == chosen_class.id_]
+        party_size = min(random.randint(1, len(potential_characters)), 3)
+        chosen_party = random.sample(potential_characters, party_size)
+        class_quest_hook = random.choice([line for line in PERSONAL_QUESTS if line[0] == str(chosen_class.id_)])[2:]
         xp_reward = randint(500, 2000)
-        personal_quest_journal = "**A hero did something!**\n"
-        personal_quest_journal = "".join([personal_quest_journal, hero.name])
-        personal_quest_journal = " ".join([personal_quest_journal, "the"])
-        personal_quest_journal = " ".join([personal_quest_journal, hero.character_class.name])
-        personal_quest_journal = "".join([personal_quest_journal, personal_quest_hook])
-        personal_quest_journal = ", ".join([personal_quest_journal, "which earned"])
-        personal_quest_journal = " ".join([personal_quest_journal, hero.name])
-        personal_quest_journal = " ".join([personal_quest_journal, str(xp_reward)])
-        personal_quest_journal = " ".join([personal_quest_journal, "xp."])
-        hero.current_xp += xp_reward
-        statistics = charutils.get_character_statistics(hero)
-        statistics.personal_quests += 1
-        charutils.update_character_statistics(statistics)
-        charutils.update_db_character(charutils.character_to_db_character(hero))
+        #class specific replacement events
+        if party_size == 2 and chosen_class.id_ == 2: #fighters will duel if left together
+            description = "**XP is not given, it is taken!**\n" + chosen_party[1].name + class_quest_hook + " and earned " + str(xp_reward) + " xp. " \
+                + chosen_party[0].name + " decided to earn the xp in a duel instead and attacked " + chosen_party[1].name + "!"
+            #defender still gets XP
+            chosen_party[1].current_xp += xp_reward
+            defender_statistics = charutils.get_character_statistics(chosen_party[1])
+            defender_statistics.personal_quests += 1
+            charutils.update_character_statistics(defender_statistics)
+            charutils.update_db_character(charutils.character_to_db_character(chosen_party[1]))
+            return self.run_pvp_encounter(event_outcomes, chosen_party, None, description)
+
+        if party_size == 1:
+            class_quest_journal = "**A hero did something!**\n"
+            class_quest_journal = "".join([class_quest_journal, chosen_party[0].name])
+            class_quest_journal = " ".join([class_quest_journal, "the"])
+            class_quest_journal = " ".join([class_quest_journal, chosen_class.name])
+        else:
+            class_quest_journal = "**Heroes of a feather stick together!**\n"
+            for hero in chosen_party:
+                if hero != chosen_party[0] and hero != chosen_party[-1]:
+                    class_quest_journal = "".join([class_quest_journal, ", "])
+                elif hero == chosen_party[-1]:
+                    class_quest_journal = " ".join([class_quest_journal, "and "])
+                class_quest_journal = "".join([class_quest_journal, hero.name])
+        class_quest_journal = "".join([class_quest_journal, class_quest_hook])
+        class_quest_journal = ", ".join([class_quest_journal, "which earned them"])
+        class_quest_journal = " ".join([class_quest_journal, str(xp_reward)])
+        class_quest_journal = " ".join([class_quest_journal, "xp."])
+        for hero in chosen_party:
+            hero.current_xp += xp_reward
+            statistics = charutils.get_character_statistics(hero)
+            statistics.personal_quests += 1
+            charutils.update_character_statistics(statistics)
+            charutils.update_db_character(charutils.character_to_db_character(hero))
 
         if event_outcomes:
-            event_outcomes.outcome_messages.append(personal_quest_journal)
+            event_outcomes.outcome_messages.append(class_quest_journal)
         else:
-            event_outcomes = EventOutcomes([personal_quest_journal], [])
+            event_outcomes = EventOutcomes([class_quest_journal], [])
 
         return event_outcomes
 

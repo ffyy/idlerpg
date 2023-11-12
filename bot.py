@@ -52,7 +52,7 @@ class RpgEngine(discord.Client):
     async def before_running_events(self):
         if self.run_events.current_loop == 0:
             sleep_time = 30 #wait 30 seconds before running the first event
-            print(str(datetime.datetime.now()) + " waiting until starting events: " + str(sleep_time))
+            print(str(datetime.datetime.now()) + " - waiting until starting events: " + str(sleep_time))
             await sleep(sleep_time)
             await self.wait_until_ready()
         else:
@@ -65,11 +65,11 @@ client = RpgEngine(intents=intents)
 
 # DEBUG COMMANDS
 if DEBUG_MODE == "1":
-    @client.tree.command(name="personalquest",description="Run a personal quest") #testing command
-    async def personalquest(interaction: discord.Interaction):
+    @client.tree.command(name="classquest",description="Run a class quest") #testing command
+    async def classquest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
-            await interaction.response.send_message(content="Running a personal quest")
-            event_outcomes = DM.run_personal_quest()
+            await interaction.response.send_message(content="Running a class quest")
+            event_outcomes = DM.run_class_quest()
             await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
