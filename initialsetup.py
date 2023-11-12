@@ -24,8 +24,8 @@ def do():
 
     print("creating new tables")
     cur = db.cursor()
-    cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
-    cur.execute("CREATE TABLE IF NOT EXISTS deleted_character(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER, player_id INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, bonus INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS deleted_character(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL, level INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER, player_id INTEGER, reason INTEGER)")
     cur.execute("CREATE TABLE IF NOT EXISTS class(id_ INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL, dice INTEGER NOT NULL, die_size INTEGER NOT NULL, bonus INTEGER NOT NULL, xp_per_level INTEGER NOT NULL, max_hp INTEGER NOT NULL, description TEXT NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER NOT NULL, unattuned INTEGER NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id TEXT UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")

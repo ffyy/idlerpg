@@ -146,9 +146,9 @@ class DeleteView(discord.ui.View):
 
     @discord.ui.button(label="Delete the character", style=discord.ButtonStyle.primary, emoji="☠")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        response = charutils.delete_character_by_id(interaction.user.id)
+        character_name = charutils.delete_character_by_id(interaction.user.id)
         await interaction.response.edit_message(content=("You can always start again by using /register"), view=None)
-        await interaction.channel.send(response)
+        await interaction.channel.send(content="The character " + character_name + " was deleted.")
 
     @discord.ui.button(label="Don't delete the character", style=discord.ButtonStyle.primary, emoji="😎")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):

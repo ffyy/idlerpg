@@ -38,6 +38,7 @@ class CharacterDB:
             id_,
             name,
             level,
+            bonus,
             current_xp,
             current_hp,
             class_id,
@@ -46,6 +47,7 @@ class CharacterDB:
         self.id_ = id_
         self.name = name
         self.level = level
+        self.bonus = bonus
         self.current_xp = current_xp
         self.current_hp = current_hp
         self.class_id = class_id
@@ -57,6 +59,7 @@ class Character:
             id_,
             name,
             level,
+            bonus,
             current_xp,
             current_hp,
             character_class: CharacterClass,
@@ -65,13 +68,15 @@ class Character:
         self.id_ = id_
         self.name = name
         self.level = level
+        self.bonus = bonus
         self.current_xp = current_xp
         self.current_hp = current_hp
         self.character_class = character_class
         self.gear = gear
 
-    def roll_dice(self):
-        result = self.character_class.bonus
+    def roll_dice(self, temporary_bonus=0):
+        result = self.bonus + temporary_bonus
+        print("bonus was " + str(result))
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)
             result += this_roll
@@ -84,7 +89,7 @@ class Character:
         return xp
 
     def take_long_rest(self):
-        rested_character = Character(self.id_, self.name, self.level, self.current_xp, self.current_hp, self.character_class, self.gear)
+        rested_character = Character(self.id_, self.name, self.level, self.bonus, self.current_xp, self.current_hp, self.character_class, self.gear)
         while rested_character.current_xp >= self.character_class.xp_per_level:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
@@ -114,7 +119,8 @@ class DeadCharacter:
             class_id,
             gearscore,
             player_id,
-            life_length
+            life_length,
+            death_reason
     ):
         self.id_ = id_
         self.name = name
@@ -123,6 +129,7 @@ class DeadCharacter:
         self.gearscore = gearscore
         self.player_id = player_id
         self.life_length = life_length
+        self.death_reason = death_reason
 
 class Quest:
     def __init__(

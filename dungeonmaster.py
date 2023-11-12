@@ -107,7 +107,7 @@ class DungeonMaster:
 
         completed_quest = dm_quest
         for adventurer in dm_quest.party:
-            adventurer_roll = adventurer.roll_dice() + adventurer.gear.gearscore
+            adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore)
             completed_quest.party_rolls.append(adventurer_roll)
 
         party_max_roll = 100*len(dm_quest.party)
@@ -172,7 +172,7 @@ class DungeonMaster:
                 elif character.current_hp <= 0:
                     character.current_hp = 0
                     completed_quest.death_notices.append(charutils.get_discord_id_by_character(character))
-                    charutils.reincarnate(character)
+                    charutils.reincarnate(character, -1)
                     completed_quest.quest_journal = " ".join([completed_quest.quest_journal, character.name])
                     completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "died and was reincarnated at level 0!"])
             completed_quest.quest_journal = "\n".join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
@@ -273,7 +273,7 @@ class DungeonMaster:
 
         pvp_rolls = []
         for character in pvp_characters:
-            character_roll = character.roll_dice() + character.gear.gearscore
+            character_roll = character.roll_dice(character.gear.gearscore)
             pvp_rolls.append(character_roll)
         xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
         hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
@@ -295,7 +295,7 @@ class DungeonMaster:
                 pvp_characters[1].current_hp = 0
                 ganker_statistics.pks += 1
                 deaths.append(charutils.get_discord_id_by_character(pvp_characters[1]))
-                charutils.reincarnate(pvp_characters[1])
+                charutils.reincarnate(pvp_characters[1], pvp_characters[0].id_)
                 pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
                 pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
                 #start handling loot
@@ -342,7 +342,7 @@ class DungeonMaster:
                 deaths.append(charutils.get_discord_id_by_character(pvp_characters[0]))
                 pvp_characters[0].current_hp = 0
                 defender_statistics.pks += 1
-                charutils.reincarnate(pvp_characters[0])
+                charutils.reincarnate(pvp_characters[0], pvp_characters[1].id_)
                 pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
                 pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
                 #start handling loot
@@ -392,7 +392,7 @@ class DungeonMaster:
 
         return event_outcomes
 
-    def run_group_pvp(self, fighters: list[Character]=None, description=None) -> EventOutcomes:
+    def run_group_pvp(self, fighters: list[Character]=None, description: str=None) -> EventOutcomes:
         """Runs a group fight in which the highest level character defends against 2-4 lower level characters. If the defender wins, they gain XP.
         If the defender loses, they lose XP. The fight is handled like several duels against the defender ongoing at once.
         In these fights, Characters may lose hp and die as in regular PvP.
@@ -430,13 +430,14 @@ class DungeonMaster:
         defender_statistics = charutils.get_character_statistics(defender)
         defender_statistics.defences_attempted += 1
         for attacker in attackers:
-            defender_rolls.append(defender.roll_dice() + defender.gear.gearscore)
-            attacker_rolls.append(attacker.roll_dice() + attacker.gear.gearscore)
+            defender_rolls.append(defender.roll_dice(defender.gear.gearscore))
+            attacker_rolls.append(attacker.roll_dice(attacker.gear.gearscore))
             current_attacker_statistics = charutils.get_character_statistics(attacker)
             current_attacker_statistics.ganks_attempted += 1
             charutils.update_character_statistics(current_attacker_statistics)
 
         xp_reward = int(5000*(sum(defender_rolls)/(sum(attacker_rolls))))
+        carry_index = 0
 
         if sum(defender_rolls) >= sum(attacker_rolls): #intro text in journal depending on who won
             defender_statistics.defences_won += 1
@@ -444,7 +445,6 @@ class DungeonMaster:
             pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "2"])[2:]]) #
             pvp_journal = "".join([pvp_journal, "!"])
         else:
-            carry_index = 0
             for i,attacker in enumerate(attackers):
                 current_attacker_statistics = charutils.get_character_statistics(attacker)
                 current_attacker_statistics.ganks_won += 1
@@ -472,7 +472,7 @@ class DungeonMaster:
                     pvp_journal = " ".join([pvp_journal, attacker.name])
                     pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
                     event_outcomes.deaths.append(charutils.get_discord_id_by_character(attacker))
-                    charutils.reincarnate(attacker)
+                    charutils.reincarnate(attacker, defender.id_)
                     defender_statistics.pks += 1
             else:
                 defender_hp_loss += hp_loss
@@ -491,7 +491,7 @@ class DungeonMaster:
                 pvp_journal = " ".join([pvp_journal, defender.name])
                 pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
                 event_outcomes.deaths.append(charutils.get_discord_id_by_character(defender))
-                charutils.reincarnate(defender)
+                charutils.reincarnate(defender, attackers[carry_index].id_)
 
         if sum(defender_rolls) >= sum(attacker_rolls):
             defender.current_xp += xp_reward
@@ -631,7 +631,7 @@ class DungeonMaster:
 
         old_characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
         for old_character in old_characters:
-            resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear)
+            resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.bonus, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear)
             resting_character.current_xp += resting_character.roll_for_passive_xp()
             rested_characters.append(resting_character.take_long_rest())
 

@@ -52,8 +52,8 @@ def update_character_statistics(stats: CharacterStatistics):
     cur.close
 
 def register_character(name, class_id, player_id):
-    character = CharacterDB(None, name, 0, 0, 0, class_id, None)
     character_class = get_class(class_id)
+    character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None)
     class_name = character_class.name
 
     db = sqlite3.connect(DB_PATH)
@@ -64,7 +64,7 @@ def register_character(name, class_id, player_id):
         else:
             cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (0,0)")
         character.gear_id = cur.lastrowid
-        cur.execute("INSERT INTO character(name,level,current_xp,current_hp,class_id,gear_id) VALUES (?,?,?,?,?,?)", (character.name, character.level, character.current_xp, character_class.max_hp, character.class_id, character.gear_id))
+        cur.execute("INSERT INTO character(name,level,bonus,current_xp,current_hp,class_id,gear_id) VALUES (?,?,?,?,?,?,?)", (character.name, character.level, character.bonus, character.current_xp, character_class.max_hp, character.class_id, character.gear_id))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
         cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, pks, personal_quests, create_timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)", (character.id_, 0, 0, 0, 0, 0, 0, 0, 0, int(time.time())))
@@ -79,29 +79,25 @@ def delete_character_by_id(player_id):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     character = get_character_by_player_id(player_id)
-    cur.execute("UPDATE statistics SET delete_timestamp = ? WHERE character_id = ?", (int(time.time()), character.id_))
-    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id) VALUES (?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id))
-    cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
-    cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
     db.commit()
     cur.close()
-    response = "Deleted character " + character.name
-    return response
+    delete_character(character, -2)
+    return character.name
 
-def delete_character(character: Character):
+def delete_character(character: Character, reason):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     player_id = get_discord_id_by_character(character)
     cur.execute("UPDATE statistics SET delete_timestamp = ? WHERE character_id = ?", (int(time.time()), character.id_))
-    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id) VALUES (?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id))
+    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id,reason) VALUES (?,?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id, reason))
     cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
     cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
     db.commit()
     cur.close()
 
-def reincarnate(character: Character):
+def reincarnate(character: Character, reason):
     player_id = get_discord_id_by_character(character)
-    delete_character(character)
+    delete_character(character, reason)
     register_character(character.name, character.character_class.id_, player_id)
 
 def register_player(player_id, character_id):
@@ -120,7 +116,7 @@ def get_character_by_name(name) -> Character:
     if db_character is None:
         return None
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
         character = db_character_to_character(data_character)
         return character
 
@@ -133,7 +129,7 @@ def get_character_by_id(id_) -> Character:
     if db_character is None:
         return None
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
         character = db_character_to_character(data_character)
         return character
 
@@ -159,7 +155,7 @@ def get_character_by_player_id(player_id) -> Character:
         db_character = cur.fetchone()
     cur.close()
     if db_character is not None:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
         character = db_character_to_character(data_character)
         return character
     else:
@@ -188,7 +184,7 @@ def get_all_dead_characters() -> list[DeadCharacter]:
         gearscore = get_gear(db_character[6]).gearscore
         stats = get_character_statistics_by_id(db_character[0])
         time_alive = stats.delete_timestamp - stats.create_timestamp
-        dead_characters.append(DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[5], gearscore, db_character[7], time_alive))
+        dead_characters.append(DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[5], gearscore, db_character[7], time_alive, db_character[8]))
 
     dead_characters.sort(key=lambda dead_character: -dead_character.life_length)
 
@@ -233,13 +229,13 @@ def get_gear(id) -> Gear:
         return None
 
 def character_to_db_character(character: Character) -> CharacterDB:
-    db_character = CharacterDB(character.id_, character.name, character.level, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_)
+    db_character = CharacterDB(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_)
     return db_character
 
 def db_character_to_character(character: CharacterDB) -> Character:
     game_class = get_class(character.class_id)
     game_gear = get_gear(character.gear_id)
-    game_character = Character(character.id_, character.name, character.level, character.current_xp, character.current_hp, game_class, game_gear)
+    game_character = Character(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, game_class, game_gear)
     return game_character
 
 def is_name_valid(name) -> bool:
@@ -260,22 +256,6 @@ def get_top10() -> str:
     return(str(cur.fetchall()))
 
 #GAME OCCURRENCES
-
-def level_up_by_id(character_id):
-    character = get_character_by_id(character_id)
-    character.level += 1
-    update_db_character(character_to_db_character(character))
-    return "Character " + character.name + " leveled up by going on an adventure and is now level " + str(character.level)
-
-def level_me_up(player_id):
-    character = get_character_by_player_id(player_id)
-    if character is not None:
-        character.level += 1
-        db_character = character_to_db_character(character)
-        update_db_character(db_character)
-        return "Character " + character.name + " is now level " + str(character.level)
-    else:
-        return "You don't even have a character.\nUse /register to register a new character."
 
 def get_leaderboard(top_x, users_list, class_filter) -> str:
     characters = get_all_characters()
