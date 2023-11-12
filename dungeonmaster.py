@@ -26,6 +26,14 @@ class DungeonMaster:
         self.events_list = []
         self.initialize_events_list()
 
+    def is_pvp_allowed(self) -> bool:
+        """Checks if there are enough characters in the world for random PvP events to trigger. Returns true in case there are at least 6 living characters.
+        """
+        if charutils.get_character_count() > 5:
+            return True
+        else:
+            return False
+
     def choose_and_run_event(self) -> EventOutcomes:
         """Randomly chooses an event type from the list of remaining event types before a long rest. Once triggered, the event type is removed from the list.\n
         If all event types have been removed from the list, a run_long_rest() is triggered and the remaining events list is reset to the list defined in DEFAULT_EVENTS_LIST.\n
@@ -47,7 +55,7 @@ class DungeonMaster:
                 print("chose adventure")
                 return self.run_adventure()
             case 2:
-                if charutils.get_character_count() > 5: #in worlds with few characters, constant PvP is too volatile
+                if self.is_pvp_allowed():
                     print("chose pvp")
                     return self.run_pvp_encounter()
                 else:
@@ -381,6 +389,174 @@ class DungeonMaster:
                     event_outcomes.deaths.append(discord_id)
         else:
             event_outcomes = EventOutcomes([pvp_journal], deaths)
+
+        return event_outcomes
+
+    def run_group_pvp(self, fighters: list[Character]=None, description=None) -> EventOutcomes:
+        """Runs a group fight in which the highest level character defends against 2-4 lower level characters. If the defender wins, they gain XP.
+        If the defender loses, they lose XP. The fight is handled like several duels against the defender ongoing at once.
+        In these fights, Characters may lose hp and die as in regular PvP.
+
+        Arguments:
+            fighters: if provided, the first character is the defender and other characters in the list are attackers
+            description: if provided, overrides the journal entry for the fight in the Discord message. Expected to be passed only together with fighters.
+        """
+        event_outcomes = EventOutcomes([], [])
+        if not self.is_pvp_allowed():
+            return event_outcomes
+
+        if fighters and description:
+            defender = fighters[0]
+            attackers = fighters.remove(defender)
+            pvp_journal = description
+        else:
+            all_characters = charutils.get_all_characters()
+            defender = max(all_characters, key=lambda character: character.level)
+            all_characters.remove(defender)
+            attackers_count = random.randint(2,4)
+            attackers = random.sample(all_characters, attackers_count)
+
+            pvp_journal = "**One against many!**\n" + defender.name + " was attacked by "
+            for attacker in attackers:
+                if attacker != attackers[0] and attacker != attackers[-1]:
+                    pvp_journal = "".join([pvp_journal, ", "])
+                elif attacker == attackers[-1]:
+                    pvp_journal = " ".join([pvp_journal, "and "])
+                pvp_journal = "".join([pvp_journal, attacker.name])
+            pvp_journal = " ".join([pvp_journal, "because of jealousy and had to put up a desparate defence!\n"])
+
+        defender_rolls = []
+        attacker_rolls = []
+        defender_statistics = charutils.get_character_statistics(defender)
+        defender_statistics.defences_attempted += 1
+        for attacker in attackers:
+            defender_rolls.append(defender.roll_dice() + defender.gear.gearscore)
+            attacker_rolls.append(attacker.roll_dice() + attacker.gear.gearscore)
+            current_attacker_statistics = charutils.get_character_statistics(attacker)
+            current_attacker_statistics.ganks_attempted += 1
+            charutils.update_character_statistics(current_attacker_statistics)
+
+        xp_reward = int(5000*(sum(defender_rolls)/(sum(attacker_rolls))))
+
+        if sum(defender_rolls) >= sum(attacker_rolls): #intro text in journal depending on who won
+            defender_statistics.defences_won += 1
+            pvp_journal = "".join([pvp_journal, defender.name])
+            pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "2"])[2:]]) #
+            pvp_journal = "".join([pvp_journal, "!"])
+        else:
+            carry_index = 0
+            for i,attacker in enumerate(attackers):
+                current_attacker_statistics = charutils.get_character_statistics(attacker)
+                current_attacker_statistics.ganks_won += 1
+                charutils.update_character_statistics(current_attacker_statistics)
+                if attacker_rolls[i]-defender_rolls[i] > attacker_rolls[0]-defender_rolls[0]:
+                    carry_index = i
+            pvp_journal = "".join([pvp_journal, attackers[carry_index].name])
+            pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "2"])[2:]])
+            pvp_journal = "".join([pvp_journal, "!"])
+        #handle hp losses during the fights
+        defender_hp_loss = 0
+        for i, attacker in enumerate(attackers): #each attacker has a separate duel with the defender
+            hp_loss = abs(defender_rolls[i] - attacker_rolls[i])
+            if defender_rolls[i] > attacker_rolls[i]:
+                attacker.current_hp -= hp_loss
+                pvp_journal = " ".join([pvp_journal, attacker.name])
+                pvp_journal = " ".join([pvp_journal, "lost"])
+                pvp_journal = " ".join([pvp_journal, str(hp_loss)])
+                pvp_journal = " ".join([pvp_journal, "HP."])
+                #handle possible death
+                if attacker.current_hp > 0:
+                    charutils.update_db_character(charutils.character_to_db_character(attacker))
+                elif attacker.current_hp <= 0:
+                    attacker.current_hp = 0
+                    pvp_journal = " ".join([pvp_journal, attacker.name])
+                    pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                    event_outcomes.deaths.append(charutils.get_discord_id_by_character(attacker))
+                    charutils.reincarnate(attacker)
+                    defender_statistics.pks += 1
+            else:
+                defender_hp_loss += hp_loss
+        if defender_hp_loss > 0:
+            #defender_hp_loss = defender_hp_loss//len(attackers) #defender toughness scales with number of attackers
+            defender.current_hp -= defender_hp_loss
+            pvp_journal = " ".join([pvp_journal, defender.name])
+            pvp_journal = " ".join([pvp_journal, "lost a total of"])
+            pvp_journal = " ".join([pvp_journal, str(defender_hp_loss)])
+            pvp_journal = " ".join([pvp_journal, "HP in the battle."])
+            #handle possible death
+            if defender.current_hp > 0:
+                charutils.update_db_character(charutils.character_to_db_character(defender))
+            elif defender.current_hp <= 0:
+                defender.current_hp = 0
+                pvp_journal = " ".join([pvp_journal, defender.name])
+                pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                event_outcomes.deaths.append(charutils.get_discord_id_by_character(defender))
+                charutils.reincarnate(defender)
+
+        if sum(defender_rolls) >= sum(attacker_rolls):
+            defender.current_xp += xp_reward
+            charutils.update_db_character(charutils.character_to_db_character(defender))
+            pvp_journal = "\n".join([pvp_journal, "XP reward for"])
+            pvp_journal = " ".join([pvp_journal, defender.name])
+            pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
+            pvp_journal = "\n".join([pvp_journal, str(sum(defender_rolls))])
+            pvp_journal = "/".join([pvp_journal, str(sum(attacker_rolls))])
+            pvp_journal = " - ".join([pvp_journal, "**Success!**"])
+        else:
+            if xp_reward >= defender.current_xp:
+                xp_reward = defender.current_xp
+            defender.current_xp = max(defender.current_xp-xp_reward, 0)
+            charutils.update_db_character(charutils.character_to_db_character(defender))
+            pvp_journal = "\n".join([pvp_journal, "XP loss for"])
+            pvp_journal = " ".join([pvp_journal, defender.name])
+            pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
+            pvp_journal = "\n".join([pvp_journal, str(sum(defender_rolls))])
+            pvp_journal = "/".join([pvp_journal, str(sum(attacker_rolls))])
+            pvp_journal = " - ".join([pvp_journal, "**Failure!**"])
+
+        charutils.update_character_statistics(defender_statistics)
+
+        defender_hp_bar = make_hp_bar(defender.current_hp, defender.character_class.max_hp)
+        defender_table_strings = []
+        defender_table_strings.append(["Name"])
+        defender_table_strings.append(["Class"])
+        defender_table_strings.append(["L"])
+        defender_table_strings.append(["GS"])
+        defender_table_strings.append(["XP"])
+        defender_table_strings.append(["HP"])
+        defender_table_strings[0].append(defender.name)
+        defender_table_strings[1].append(defender.character_class.name)
+        defender_table_strings[2].append(str(defender.level))
+        defender_table_strings[3].append(str(defender.gear.gearscore))
+        defender_table_strings[4].append(str(defender.current_xp) + "/" + str(defender.character_class.xp_per_level))
+        defender_table_strings[5].append(defender_hp_bar)
+
+        defender_table = make_table(defender_table_strings)
+
+        attackers_table_strings = []
+        attackers_table_strings.append(["Name"])
+        attackers_table_strings.append(["Class"])
+        attackers_table_strings.append(["Level"])
+        attackers_table_strings.append(["GS"])
+        attackers_table_strings.append(["A.Roll"])
+        attackers_table_strings.append(["D.Roll"])
+        attackers_table_strings.append(["HP"])
+        for i,attacker in enumerate(attackers):
+            hp_bar = make_hp_bar(attacker.current_hp, attacker.character_class.max_hp)
+            attackers_table_strings[0].append(attacker.name)
+            attackers_table_strings[1].append(attacker.character_class.name)
+            attackers_table_strings[2].append(str(attacker.level))
+            attackers_table_strings[3].append(str(attacker.gear.gearscore))
+            attackers_table_strings[4].append(str(attacker_rolls[i]))
+            attackers_table_strings[5].append(str(defender_rolls[i]))
+            attackers_table_strings[6].append(hp_bar)
+
+        attackers_table = make_table(attackers_table_strings)
+        pvp_journal = "".join([pvp_journal, defender_table])
+        pvp_journal = "".join([pvp_journal, "VS"])
+        pvp_journal = "".join([pvp_journal, attackers_table])
+
+        event_outcomes.outcome_messages.append(pvp_journal)
 
         return event_outcomes
 

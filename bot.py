@@ -65,6 +65,15 @@ client = RpgEngine(intents=intents)
 
 # DEBUG COMMANDS
 if DEBUG_MODE == "1":
+    @client.tree.command(name="groupfight",description="Run a group fight") #testing command
+    async def groupfight(interaction: discord.Interaction):
+        if interaction.user.id == ADMIN_ID:
+            await interaction.response.send_message(content="Running a group fight")
+            event_outcomes = DM.run_group_pvp()
+            await send_event_messages(interaction.channel, event_outcomes)
+        else:
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
+
     @client.tree.command(name="classquest",description="Run a class quest") #testing command
     async def classquest(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
