@@ -244,7 +244,8 @@ class RulesView(discord.ui.View):
         discord.SelectOption(label="Experience", value="1", description="How do characters gain XP?"),
         discord.SelectOption(label="Questing", value="2", description="How are are quests run?"),
         discord.SelectOption(label="Gear", value="3", description="What does gear do?"),
-        discord.SelectOption(label="PvP", value="4", description="How do characters fight each other?")
+        discord.SelectOption(label="PvP", value="4", description="How do characters fight each other?"),
+        discord.SelectOption(label="Classes", value="5", description="What do the different classes do?")
     ]
 
     @discord.ui.select(placeholder="Rules section", options=rules_sections, max_values=1)
@@ -286,6 +287,7 @@ Failure at the quest awards nothing. All characters involved in the quest also l
 Gear and gearscore are an abstraction of all the magical items the character has acquired throughout their adventuring career. The character's gearscore value is used in rolls which determine success at encounters (group quests and PvP).
 Items can be gained in the following ways:
 - **Be a Hobbit**: All Hobbits start with a gearscore of 20, because all adventuring Hobbits have a powerful magic ring.
+- **Be a Hunter**: Hunters will claim all gear which is dropped on party quests.
 - **Do well at party quests**: If the party succeeds at a group quest, there is a chance that the party member with the highest roll is awarded a magic item. The chance for an item to be awarded scales with the ratio of the party's total roll compared to the quest difficulty, with a 100% chance if the party's total roll is double the quest difficulty, going down to 1% if the party just barely met the target number. A magic item is also always awarded if the party succeeds at the quest and the average roll in the party is above 80. For example, for a four-character party, if the total party roll is at least 320, an item is guaranteed to be awarded, as long as that roll was enough to beat the quest difficulty.
 - **Kill other characters**: If a character dies in a PvP encounter, the killer is guaranteed at least one magic item. If the character who died had a gearscore higher than 1, a random number of items, up to the dead character's gearscore, is awarded to the killer.\n
 Items which are found by characters are not immediately equipped. When a character finds an item, it is considered unattuned. Magic items are only equipped (the character's gearscore increased) during long rests.
@@ -294,13 +296,36 @@ Items which are found by characters are not immediately equipped. When a charact
                 response = """
 PvP is a high-risk/high-reward catch-up activity. In PvP encounters, a character who is falling behind in levels attacks a character ahead of them in an attempt to gain bonus experience.\n
 If there are enough characters in the world for tensions to develop, every game day, a PvP encounter is triggered. Only characters in the bottom half of the leaderboard are eligible to trigger PvP encounters. All characters ahead of them on the leaderboard are possible targets.\n
-In the PvP encounter, the two characters roll off directly against each other.
+PvP encounters can also be triggered by two Fighters going on class quest together. Rarely, a group of characters will also group up to take on the character at the very top of the leaderboard together.\n
+In the standard duel PvP encounter, characters roll off directly against each other.
 - For the roll, class dice plus gearscore is used.
 - The character with the higher roll wins the encounter.
 - The losing character loses hp equal to the difference in rolls.
 - If any character dies in the encounter, the winner loots at least one magic item from the corpse. See the 'Items' section of the rules for more info.
 - If the instigator wins the encounter, they earn bonus experience. See the 'Experience' section of the rules for more info.
 """
+            case "5":
+                response = ""
+                class_strings = []
+                character_classes = charutils.get_all_classes()
+                for i,character_class in enumerate(character_classes):
+                    class_strings.append("")
+                    class_strings[i] = "".join([class_strings[i], "**"])
+                    class_strings[i] = "".join([class_strings[i], character_class.name])
+                    class_strings[i] = "".join([class_strings[i], "**"])
+                    class_strings[i] = "\n".join([class_strings[i], "Dice:"])
+                    class_strings[i] = " ".join([class_strings[i], str(character_class.dice)])
+                    class_strings[i] = " | ".join([class_strings[i], "Die size:"])
+                    class_strings[i] = " ".join([class_strings[i], str(character_class.die_size)])
+                    class_strings[i] = " | ".join([class_strings[i], "Bonus to rolls:"])
+                    class_strings[i] = " ".join([class_strings[i], str(character_class.bonus)])
+                    class_strings[i] = "\n".join([class_strings[i], "Max HP:"])
+                    class_strings[i] = " ".join([class_strings[i], str(character_class.max_hp)])
+                    class_strings[i] = " | ".join([class_strings[i], "XP per level:"])
+                    class_strings[i] = " ".join([class_strings[i], str(character_class.xp_per_level)])
+                    class_strings[i] = "".join([class_strings[i], "\n"])
+                for string in class_strings:
+                    response = "\n".join([response, string])
             case _:
                 response = "Tunnel snakes rule"
         response = "\n".join([response, "Select the next section to read:"])
