@@ -74,6 +74,54 @@ class Character:
         self.character_class = character_class
         self.gear = gear
 
+    def is_thief(self) -> bool:
+        if self.character_class.id_ == 1:
+            return True
+        else:
+            return False
+
+    def is_fighter(self) -> bool:
+        if self.character_class.id_ == 2:
+            return True
+        else:
+            return False
+
+    def is_hobbit(self) -> bool:
+        if self.character_class.id_ == 3:
+            return True
+        else:
+            return False
+
+    def is_elf(self) -> bool:
+        if self.character_class.id_ == 4:
+            return True
+        else:
+            return False
+
+    def is_magic_user(self) -> bool:
+        if self.character_class.id_ == 5:
+            return True
+        else:
+            return False
+
+    def is_cleric(self) -> bool:
+        if self.character_class.id_ == 6:
+            return True
+        else:
+            return False
+
+    def is_warlock(self) -> bool:
+        if self.character_class.id_ == 7:
+            return True
+        else:
+            return False
+
+    def is_hunter(self) -> bool:
+        if self.character_class.id_ == 8:
+            return True
+        else:
+            return False
+
     def roll_dice(self, temporary_bonus=0) -> int:
         """Roll dice based on the class and bonuses of the character. In case of Warlock, the bonus is reduced after the dice are rolled.
         Because of this, if it is necessary to know the bonus during the rolls (for outcome tables), the character's bonus should be checked BEFORE rolling.
@@ -81,11 +129,8 @@ class Character:
         Arguments:
             temporary_bonus: integer which is added to this roll
         """
-        match self.character_class.id_:
-            case 6:
-                return self.cleric_roll_dice(temporary_bonus)
-            case 7:
-                return self.warlock_roll_dice(temporary_bonus)
+        if self.is_cleric: return self.cleric_roll_dice(temporary_bonus)
+        if self.is_warlock: return self.warlock_roll_dice(temporary_bonus)
         result = self.bonus + temporary_bonus
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)
@@ -130,6 +175,8 @@ class Character:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
             rested_character.current_hp = rested_character.character_class.max_hp
+            if self.is_warlock():
+                self.warlock_recharge_bonus()
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0
