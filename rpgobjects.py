@@ -84,7 +84,7 @@ class Character:
         match self.character_class.id_:
             case 6:
                 return self.cleric_roll_dice(temporary_bonus)
-            case 8:
+            case 7:
                 return self.warlock_roll_dice(temporary_bonus)
         result = self.bonus + temporary_bonus
         for die in range(self.character_class.dice):
