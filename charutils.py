@@ -63,7 +63,7 @@ def update_character_statistics(stats: CharacterStatistics):
     db.commit()
     cur.close
 
-def register_character(name, class_id, player_id):
+def register_character(name, class_id, player_id) -> Character:
     character_class = get_class(class_id)
     character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None)
     class_name = character_class.name
@@ -82,10 +82,12 @@ def register_character(name, class_id, player_id):
         cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, pks, personal_quests, create_timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)", (character.id_, 0, 0, 0, 0, 0, 0, 0, 0, int(time.time())))
         db.commit()
         cur.close()
-        return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."
+        #return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."
+        created_character = db_character_to_character(character)
+        return created_character
     except:
         traceback.print_exc()
-        return "Something went wrong"
+        return None
 
 def delete_character_by_id(player_id):
     db = sqlite3.connect(DB_PATH)
@@ -94,7 +96,8 @@ def delete_character_by_id(player_id):
     db.commit()
     cur.close()
     delete_character(character, -2)
-    return character.name
+    deleted_character = get_character_by_id(character.id_)
+    return deleted_character
 
 def delete_character(character: Character, reason):
     db = sqlite3.connect(DB_PATH)
@@ -132,17 +135,23 @@ def get_character_by_name(name) -> Character:
         character = db_character_to_character(data_character)
         return character
 
-def get_character_by_id(id_) -> Character:
+def get_character_by_id(id_):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("SELECT * FROM character WHERE id_ = ?", (id_,))
     db_character = cur.fetchone()
-    cur.close()
     if db_character is None:
-        return None
+        cur.execute("SELECT * FROM deleted_character where id_ = ?", (id_,))
+        db_character = cur.fetchone()
+        if db_character is None:
+            return None
+        dead_character = DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
+        cur.close()
+        return dead_character
     else:
         data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
         character = db_character_to_character(data_character)
+        cur.close()
         return character
 
 def get_discord_id_by_character(character):
@@ -335,6 +344,7 @@ def get_graveyard(name, users_list, class_filter) -> str:
         leaderboard_lists.append(["Kills"])
         leaderboard_lists.append(["Time alive"])
         leaderboard_lists.append(["Player"])
+        leaderboard_lists.append(["Cause of death"])
         for character in top_characters:
             stats = get_character_statistics_by_id(character.id_)
             time_alive = int(character.life_length)/3600
@@ -349,6 +359,13 @@ def get_graveyard(name, users_list, class_filter) -> str:
             player_name = [name["name"] for name in users_list if name["id"] == character.player_id]
             if player_name and player_name != "": leaderboard_lists[8].append(player_name[0])
             else: leaderboard_lists[8].append("Unknown")
+            if character.death_reason == -2:
+                leaderboard_lists[9].append("Stopped existing")
+            elif character.death_reason == -1:
+                leaderboard_lists[9].append("Natural causes")
+            else:
+                killer_name = get_character_by_id(character.death_reason).name
+                leaderboard_lists[9].append(killer_name)
 
     graveyard = make_table(leaderboard_lists)
 

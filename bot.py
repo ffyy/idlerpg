@@ -147,9 +147,15 @@ class DeleteView(discord.ui.View):
 
     @discord.ui.button(label="Delete the character", style=discord.ButtonStyle.primary, emoji="☠")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        character_name = charutils.delete_character_by_id(interaction.user.id)
+        deleted_character = charutils.delete_character_by_id(interaction.user.id)
         await interaction.response.edit_message(content=("You can always start again by using /register"), view=None)
-        await interaction.channel.send(content="The character " + character_name + " was deleted.")
+        response = "**A hero has left the building!**"
+        clean_name = re.sub("[`>*]", "", interaction.user.nick)
+        response = "\n".join([response, clean_name])
+        response = " ".join([response, "decided it was time for"])
+        response = " ".join([response, deleted_character.name])
+        response = " ".join([response, "to stop existing. And so it shall be."])
+        await interaction.channel.send(content=response)
 
     @discord.ui.button(label="Don't delete the character", style=discord.ButtonStyle.primary, emoji="😎")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -179,10 +185,19 @@ class RegisterView(discord.ui.View):
     async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction.response.defer()
         if DEBUG_MODE == "1" and interaction.user.id == ADMIN_ID and "fake" in self.name:
-            response = charutils.register_character(self.name, int(select.values[0]), randint(1,10000000))
+            created_character = charutils.register_character(self.name, int(select.values[0]), randint(1,10000000))
         else:
-            response = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
+            created_character = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
         await interaction.followup.edit_message(interaction.message.id, content=("Enjoy idling!"), view=None)
+        response = "**A hero showed up!**"
+        response = "\n".join([response, created_character.name])
+        response = " ".join([response, "the"])
+        response = " ".join([response, created_character.character_class.name])
+        response = " ".join([response, "entered the world!"])
+        response = "\n".join([response, "this character belongs to"])
+        clean_name = re.sub("[`>*]", "", interaction.user.nick)
+        response = " ".join([response, clean_name])
+        response = "".join([response, "."])
         await interaction.channel.send(response)
 
 @client.tree.command(name="register", description="Create a new character")
