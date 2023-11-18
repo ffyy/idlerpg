@@ -11,6 +11,7 @@ PVP_OUTCOMES = open("content/pvpoutcomes.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
 DEFAULT_EVENTS_LIST = [0, 1, 2]
 CLERIC_MAX_BUFF = 6
+QUEST_MINIMUM_DIFFICULTY = 20
 
 class EventOutcomes:
     def __init__(
@@ -225,7 +226,7 @@ class DungeonMaster:
             for character_id in random.sample(character_ids, party_size):
                 quest.party.append(charutils.get_character_by_id(character_id[0]))
 
-        difficulty = random.randint(20,100)*len(quest.party)
+        difficulty = random.randint(QUEST_MINIMUM_DIFFICULTY,100)*len(quest.party)
         quest.quest_difficulty = difficulty
 
         completed_quest = self.complete_quest(quest)
