@@ -16,7 +16,7 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = os.getenv("GUILD_ID")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
-TIMESCALE = int(os.getenv("TIMESCALE"))
+DAY_LENGTH = int(os.getenv("DAY_LENGTH"))
 DEBUG_MODE = os.getenv("DEBUG_MODE")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
@@ -39,25 +39,25 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
-        self.run_events.start()
+        sleep_time = 30
+        self.run_daily_events.start()
+        await sleep(sleep_time)
+        self.run_monthly_events.start()
         print(str(datetime.datetime.now()) + " - loops started")
 
-    @tasks.loop(minutes=(TIMESCALE))
-    async def run_events(self):
-        print(str(datetime.datetime.now()) + " - running a random event")
+    @tasks.loop(minutes=DAY_LENGTH/4)
+    async def run_daily_events(self):
+        print(str(datetime.datetime.now()) + " - running a random daily event")
         channel = self.get_channel(CHANNEL.id)
-        event_outcomes = DM.choose_and_run_event()
+        event_outcomes = DM.choose_and_run_daily_event()
         await send_event_messages(channel, event_outcomes)
 
-    @run_events.before_loop
-    async def before_running_events(self):
-        if self.run_events.current_loop == 0:
-            sleep_time = 30 #wait 30 seconds before running the first event
-            print(str(datetime.datetime.now()) + " - waiting until starting events: " + str(sleep_time))
-            await sleep(sleep_time)
-            await self.wait_until_ready()
-        else:
-            await self.wait_until_ready()
+    @tasks.loop(minutes=DAY_LENGTH)
+    async def run_monthly_events(self):
+        print(str(datetime.datetime.now()) + " - running a random monthly event")
+        channel = self.get_channel(CHANNEL.id)
+        monthly_event_outcomes = DM.choose_and_run_monthly_event()
+        await send_event_messages(channel, monthly_event_outcomes)
 
 intents = discord.Intents.default()
 intents.members = True
@@ -88,7 +88,7 @@ if DEBUG_MODE == "1":
     async def randomevent(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:
             await interaction.response.send_message("Running a random event")
-            event_outcomes = DM.choose_and_run_event()
+            event_outcomes = DM.choose_and_run_daily_event()
             await send_event_messages(interaction.channel, event_outcomes)
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)

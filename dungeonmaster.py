@@ -9,7 +9,8 @@ SUCCESS_DESCRIPTIONS = open("content/successes.txt").read().splitlines()
 FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
 PVP_OUTCOMES = open("content/pvpoutcomes.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
-DEFAULT_EVENTS_LIST = [0, 1, 2]
+DEFAULT_DAILY_EVENTS_LIST = [0, 1, 2]
+DEFAULT_MONTHLY_EVENTS_LIST = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 CLERIC_MAX_BUFF = 6
 QUEST_MINIMUM_DIFFICULTY = 20
 
@@ -25,8 +26,9 @@ class EventOutcomes:
 class DungeonMaster:
     def __init__(
             self):
-        self.events_list = []
-        self.initialize_events_list()
+        self.daily_events_list = []
+        self.monthly_events_list = []
+        self.initialize_daily_events_list()
 
     def is_pvp_allowed(self) -> bool:
         """Checks if there are enough characters in the world for random PvP events to trigger. Returns true in case there are at least 6 living characters.
@@ -36,18 +38,18 @@ class DungeonMaster:
         else:
             return False
 
-    def choose_and_run_event(self) -> EventOutcomes:
-        """Randomly chooses an event type from the list of remaining event types before a long rest. Once triggered, the event type is removed from the list.\n
+    def choose_and_run_daily_event(self) -> EventOutcomes:
+        """Randomly chooses an event type from the list of remaining daily event types before a long rest. Once triggered, the event type is removed from the list.\n
         If all event types have been removed from the list, a run_long_rest() is triggered and the remaining events list is reset to the list defined in DEFAULT_EVENTS_LIST.\n
         The PvP event is only run if there are more than 5 living characters in the world, otherwise another class quest is run.
         """
-        if not self.events_list:
+        if not self.daily_events_list:
             print("out of events, running long rest")
-            self.initialize_events_list()
+            self.initialize_daily_events_list()
             return self.run_long_rest()
 
-        chosen_event = random.choice(self.events_list)
-        self.events_list.remove(chosen_event)
+        chosen_event = random.choice(self.daily_events_list)
+        self.daily_events_list.remove(chosen_event)
 
         match chosen_event:
             case 0:
@@ -66,10 +68,35 @@ class DungeonMaster:
             case _:
                 return EventOutcomes([],[])
 
-    def initialize_events_list(self):
-        self.events_list = []
-        for value in DEFAULT_EVENTS_LIST:
-            self.events_list.append(value)
+    def choose_and_run_monthly_event(self) -> EventOutcomes:
+        """A month in the game world is equal to timescale * 30.\n
+        Randomly chooses an event type from the list of remaining monthly events. The list of monthly events is only reset when the month is over, meaning only if this
+        function has been called 30 times. If event type 0 is chosen, nothing happens this game day.
+        """
+        if not self.monthly_events_list:
+            self.initialize_monthly_events_list()
+
+        chosen_event = random.choice(self.monthly_events_list)
+        self.monthly_events_list.remove(chosen_event)
+        print(str(self.monthly_events_list))
+
+        match chosen_event:
+            case 0:
+                print("nothing happened")
+                return EventOutcomes([],[])
+            case 1:
+                print("running gangbang")
+                return self.run_group_pvp()
+
+    def initialize_daily_events_list(self):
+        self.daily_events_list = []
+        for value in DEFAULT_DAILY_EVENTS_LIST:
+            self.daily_events_list.append(value)
+
+    def initialize_monthly_events_list(self):
+        self.monthly_events_list = []
+        for value in DEFAULT_MONTHLY_EVENTS_LIST:
+            self.monthly_events_list.append(value)
 
     def give_quest_rewards(self, quest: Quest, event_outcomes: EventOutcomes) -> EventOutcomes:
         """Adds rewards depending on Quest.quest_type values to the characters in Quest.party and saves the changes to database.
@@ -85,9 +112,9 @@ class DungeonMaster:
                 adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
                 charutils.update_db_character(charutils.character_to_db_character(adventurer))
         if "loot" in quest.quest_type:
-            hunter = next((character for character in quest.party if character.character_class.id_ == 8), None)
+            hunter = next((character for character in quest.party if character.is_hunter()), None)
             if hunter: #hunters will always need-roll everything
-                if sum(character.character_class.id_ == 8 for character in quest.party) >= 2: #if there are two or more hunters, two of them will fight over the item
+                if sum(character.is_hunter() for character in quest.party) >= 2: #if there are two or more hunters, two of them will fight over the item
                     potential_fighters = list(character for character in quest.party if character.character_class.id_ == 8)
                     fighters = random.sample(potential_fighters, 2)
                     item_name = random.choice(ITEMS)
@@ -115,7 +142,7 @@ class DungeonMaster:
 
         completed_quest = dm_quest
         buff = 0
-        buffer = next((hero for hero in completed_quest.party if hero.character_class.id_ == 6), None)
+        buffer = next((hero for hero in completed_quest.party if hero.is_cleric()), None)
         if buffer:
             buff = randint(1,CLERIC_MAX_BUFF)
             completed_quest.quest_journal = " ".join([completed_quest.quest_journal, buffer.name])
@@ -517,7 +544,7 @@ class DungeonMaster:
             #defender_hp_loss = defender_hp_loss//len(attackers) #defender toughness scales with number of attackers
             defender.current_hp -= defender_hp_loss
             pvp_journal = " ".join([pvp_journal, defender.name])
-            pvp_journal = " ".join([pvp_journal, "lost a total of"])
+            pvp_journal = " ".join([pvp_journal, "was hit for a total of"])
             pvp_journal = " ".join([pvp_journal, str(defender_hp_loss)])
             pvp_journal = " ".join([pvp_journal, "HP in the battle."])
             #handle possible death
@@ -670,6 +697,19 @@ class DungeonMaster:
         class_quest_journal = ", ".join([class_quest_journal, "which earned them"])
         class_quest_journal = " ".join([class_quest_journal, str(xp_reward)])
         class_quest_journal = " ".join([class_quest_journal, "xp."])
+        if party_size == 1 & chosen_party[0].is_thief():
+            class_quest_journal = " ".join([class_quest_journal, "By working alone,"])
+            class_quest_journal = " ".join([class_quest_journal, chosen_party[0].name])
+            class_quest_journal = " ".join([class_quest_journal, "also found"])
+            item_name = random.choice(ITEMS)
+            if item_name[0] in "aeoiu":
+                class_quest_journal = " ".join([class_quest_journal, "an"])
+            else:
+                class_quest_journal = " ".join([class_quest_journal, "a"])
+            class_quest_journal = " ".join([class_quest_journal, item_name])
+            class_quest_journal = "".join([class_quest_journal, "!"])
+            chosen_party[0].gear.unattuned += 1
+            charutils.update_db_gear(chosen_party[0].gear)
         for hero in chosen_party:
             hero.current_xp += xp_reward
             statistics = charutils.get_character_statistics(hero)
