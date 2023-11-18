@@ -84,7 +84,8 @@ class DungeonMaster:
                 charutils.update_db_character(charutils.character_to_db_character(adventurer))
         if "loot" in quest.quest_type:
             if sum(character.character_class.id_ == 2 for character in quest.party) >= 2: #placeholder, replace fighter with hunter class once added
-                fighters = random.sample(quest.party, 2)
+                potential_fighters = list(character for character in quest.party if character.character_class.id_ == 2)
+                fighters = random.sample(potential_fighters, 2)
                 item_name = random.choice(ITEMS)
                 description = "**Disputed item!**\n" + fighters[0].name + " and " + fighters[1].name + " both wanted the magic item and decided to fight over it."
                 event_outcomes = self.run_pvp_encounter(event_outcomes, fighters, item_name, description)
