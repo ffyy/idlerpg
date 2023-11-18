@@ -76,7 +76,6 @@ class Character:
 
     def roll_dice(self, temporary_bonus=0):
         result = self.bonus + temporary_bonus
-        print("bonus was " + str(result))
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)
             result += this_roll
@@ -137,6 +136,7 @@ class Quest:
             quest_type,
             party: list[Character],
             party_rolls: list[int],
+            party_bonuses: list[int],
             death_notices: list[int],
             quest_difficulty,
             quest_journal,
@@ -144,6 +144,7 @@ class Quest:
         self.quest_type = quest_type
         self.party = party
         self.party_rolls = party_rolls
+        self.party_bonuses = party_bonuses
         self.death_notices = death_notices
         self.quest_difficulty = quest_difficulty
         self.quest_journal = quest_journal

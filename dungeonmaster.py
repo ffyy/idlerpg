@@ -109,6 +109,7 @@ class DungeonMaster:
         for adventurer in dm_quest.party:
             adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore)
             completed_quest.party_rolls.append(adventurer_roll)
+            completed_quest.party_bonuses.append(adventurer.bonus + adventurer.gear.gearscore)
 
         party_max_roll = 100*len(dm_quest.party)
         if (random.randint(1,100) <= 100*(sum(completed_quest.party_rolls) - dm_quest.quest_difficulty)/dm_quest.quest_difficulty) or (party_max_roll * QUEST_ITEM_THRESHOLD <= sum(completed_quest.party_rolls)):
@@ -194,7 +195,7 @@ class DungeonMaster:
 
         quest_hook = " ".join(["**An epic adventure was had!**\nThe heroes were given an epic quest. They had to", random.choice(QUEST_HOOKS)])
 
-        quest = Quest(quest_type, [], [], [], 0, quest_hook, 0)
+        quest = Quest(quest_type, [], [], [], [], 0, quest_hook, 0)
 
         if not character_ids:
             return EventOutcomes(["I tried to run an adventure, but nobody showed up. 😢"], [])
@@ -220,12 +221,13 @@ class DungeonMaster:
         completed_quest_lists.append(["Roll"])
 
         for i,hero in enumerate(completed_quest.party):
+            raw_roll = completed_quest.party_rolls[i] - completed_quest.party_bonuses[i]
             completed_quest_lists[0].append(hero.name)
             completed_quest_lists[1].append(hero.character_class.name)
             completed_quest_lists[2].append(str(hero.level))
             completed_quest_lists[3].append(str(hero.gear.gearscore))
             completed_quest_lists[4].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
-            completed_quest_lists[5].append(str(completed_quest.party_rolls[i]))
+            completed_quest_lists[5].append(str(completed_quest.party_rolls[i]) + " (" + str(raw_roll) + "+" + str(completed_quest.party_bonuses[i]) + ")")
 
         quest_table = make_table(completed_quest_lists)
 
@@ -272,9 +274,11 @@ class DungeonMaster:
         deaths = []
 
         pvp_rolls = []
+        pvp_bonuses = []
         for character in pvp_characters:
             character_roll = character.roll_dice(character.gear.gearscore)
             pvp_rolls.append(character_roll)
+            pvp_bonuses.append(character.bonus + character.gear.gearscore)
         xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
         hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
         if pvp_rolls[0] >= pvp_rolls[1]:
@@ -373,12 +377,13 @@ class DungeonMaster:
         pvp_report_lists.append(["Roll"])
 
         for i,fighter in enumerate(pvp_characters):
+            raw_roll = pvp_rolls[i] - pvp_bonuses[i]
             pvp_report_lists[0].append(fighter.name)
             pvp_report_lists[1].append(fighter.character_class.name)
             pvp_report_lists[2].append(str(fighter.level))
             pvp_report_lists[3].append(str(fighter.gear.gearscore))
             pvp_report_lists[4].append(make_hp_bar(fighter.current_hp, fighter.character_class.max_hp))
-            pvp_report_lists[5].append(str(pvp_rolls[i]))
+            pvp_report_lists[5].append(str(pvp_rolls[i]) + " (" + str(raw_roll) + "+" + str(pvp_bonuses[i]) + ")")
 
         pvp_journal = "".join([pvp_journal, (make_table(pvp_report_lists))])
 
@@ -426,12 +431,16 @@ class DungeonMaster:
             pvp_journal = " ".join([pvp_journal, "because of jealousy and had to put up a desparate defence!\n"])
 
         defender_rolls = []
+        defender_bonuses = []
         attacker_rolls = []
+        attacker_bonuses = []
         defender_statistics = charutils.get_character_statistics(defender)
         defender_statistics.defences_attempted += 1
         for attacker in attackers:
             defender_rolls.append(defender.roll_dice(defender.gear.gearscore))
+            defender_bonuses.append(defender.bonus + defender.gear.gearscore)
             attacker_rolls.append(attacker.roll_dice(attacker.gear.gearscore))
+            attacker_bonuses.append(attacker.bonus + attacker.gear.gearscore)
             current_attacker_statistics = charutils.get_character_statistics(attacker)
             current_attacker_statistics.ganks_attempted += 1
             charutils.update_character_statistics(current_attacker_statistics)
@@ -543,12 +552,14 @@ class DungeonMaster:
         attackers_table_strings.append(["HP"])
         for i,attacker in enumerate(attackers):
             hp_bar = make_hp_bar(attacker.current_hp, attacker.character_class.max_hp)
+            defender_raw_roll = defender_rolls[i] - defender_bonuses[i]
+            attacker_raw_roll = attacker_rolls[i] - attacker_bonuses[i]
             attackers_table_strings[0].append(attacker.name)
             attackers_table_strings[1].append(attacker.character_class.name)
             attackers_table_strings[2].append(str(attacker.level))
             attackers_table_strings[3].append(str(attacker.gear.gearscore))
-            attackers_table_strings[4].append(str(attacker_rolls[i]))
-            attackers_table_strings[5].append(str(defender_rolls[i]))
+            attackers_table_strings[4].append(str(attacker_rolls[i]) + " (" + str(attacker_raw_roll) + "+" + str(attacker_bonuses[i]) + ")")
+            attackers_table_strings[5].append(str(defender_rolls[i]) + " (" + str(defender_raw_roll) + "+" + str(defender_bonuses[i]) + ")")
             attackers_table_strings[6].append(hp_bar)
 
         attackers_table = make_table(attackers_table_strings)
