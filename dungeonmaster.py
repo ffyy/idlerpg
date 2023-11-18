@@ -10,6 +10,7 @@ FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
 PVP_OUTCOMES = open("content/pvpoutcomes.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
 DEFAULT_EVENTS_LIST = [0, 1, 2]
+CLERIC_MAX_BUFF = 6
 
 class EventOutcomes:
     def __init__(
@@ -112,9 +113,17 @@ class DungeonMaster:
         QUEST_ITEM_THRESHOLD = 0.8 #if the quest is successful and the sum of party rolls is at least 80% of everyone rolling a 100, an item is guaranteed
 
         completed_quest = dm_quest
+        buff = 0
+        buffer = next((hero for hero in completed_quest.party if hero.character_class.id_ == 6), None)
+        if buffer:
+            buff = randint(1,CLERIC_MAX_BUFF)
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, buffer.name])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "gave everyone a buff, which gave them a bonus of"])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, str(buff)])
+            completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "to their rolls."])
         for adventurer in dm_quest.party:
-            completed_quest.party_bonuses.append(adventurer.bonus + adventurer.gear.gearscore)
-            adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore)
+            completed_quest.party_bonuses.append(adventurer.bonus + adventurer.gear.gearscore + buff)
+            adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore + buff)
             completed_quest.party_rolls.append(adventurer_roll)
 
         party_max_roll = 100*len(dm_quest.party)
@@ -130,14 +139,13 @@ class DungeonMaster:
             completed_quest.outcome = 1
             completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "Luckily,"])
             completed_quest.quest_journal = " ".join([completed_quest.quest_journal, random.choice(SUCCESS_DESCRIPTIONS)])
-            healer = next((hero for hero in completed_quest.party if hero.character_class.id_ == 6), None)
-            if healer:
-                hp_gain = random.randint(3,24) + 4
+            if buffer:
+                hp_gain = random.randint(1,8) + 4
                 for character in completed_quest.party:
                     character.current_hp = min(character.current_hp + hp_gain, character.character_class.max_hp)
                     charutils.update_db_character(charutils.character_to_db_character(character))
                 completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "Thanks to"])
-                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, healer.name])
+                completed_quest.quest_journal = " ".join([completed_quest.quest_journal, buffer.name])
                 completed_quest.quest_journal = ", ".join([completed_quest.quest_journal, "everyone was healed for"])
                 completed_quest.quest_journal = " ".join([completed_quest.quest_journal, str(hp_gain)])
                 completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "HP."])
@@ -286,8 +294,11 @@ class DungeonMaster:
         pvp_rolls = []
         pvp_bonuses = []
         for character in pvp_characters:
-            pvp_bonuses.append(character.bonus + character.gear.gearscore)
-            character_roll = character.roll_dice(character.gear.gearscore)
+            temporary_bonus = 0
+            if character.character_class.id_ == 6: #clerics will buff themselves before fighting
+                temporary_bonus = randint(1,CLERIC_MAX_BUFF)
+            pvp_bonuses.append(character.bonus + character.gear.gearscore + temporary_bonus)
+            character_roll = character.roll_dice(character.gear.gearscore + temporary_bonus)
             pvp_rolls.append(character_roll)
         xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
         hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
@@ -447,10 +458,16 @@ class DungeonMaster:
         defender_statistics = charutils.get_character_statistics(defender)
         defender_statistics.defences_attempted += 1
         for attacker in attackers:
-            defender_bonuses.append(defender.bonus + defender.gear.gearscore)
-            defender_rolls.append(defender.roll_dice(defender.gear.gearscore))
-            attacker_bonuses.append(attacker.bonus + attacker.gear.gearscore)
-            attacker_rolls.append(attacker.roll_dice(attacker.gear.gearscore))
+            defender_temp_bonus = 0
+            attacker_temp_bonus = 0
+            if defender.character_class.id_ == 6: #clerics will buff themselves before fighting
+                defender_temp_bonus = randint(1,CLERIC_MAX_BUFF)
+            defender_bonuses.append(defender.bonus + defender.gear.gearscore + defender_temp_bonus)
+            defender_rolls.append(defender.roll_dice(defender.gear.gearscore + defender_temp_bonus))
+            if attacker.character_class.id_ == 6: #clerics will buff themselves before fighting
+                attacker_temp_bonus = randint(1,CLERIC_MAX_BUFF)
+            attacker_bonuses.append(attacker.bonus + attacker.gear.gearscore + attacker_temp_bonus)
+            attacker_rolls.append(attacker.roll_dice(attacker.gear.gearscore + attacker_temp_bonus))
             current_attacker_statistics = charutils.get_character_statistics(attacker)
             current_attacker_statistics.ganks_attempted += 1
             charutils.update_character_statistics(current_attacker_statistics)

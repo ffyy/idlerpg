@@ -81,8 +81,22 @@ class Character:
         Arguments:
             temporary_bonus: integer which is added to this roll
         """
-        if self.character_class.name=="Warlock":
-            return self.warlock_roll_dice(temporary_bonus)
+        match self.character_class.id_:
+            case 6:
+                return self.cleric_roll_dice(temporary_bonus)
+            case 8:
+                return self.warlock_roll_dice(temporary_bonus)
+        result = self.bonus + temporary_bonus
+        for die in range(self.character_class.dice):
+            this_roll = randint(1, self.character_class.die_size)
+            result += this_roll
+        return result
+
+    def cleric_roll_dice(self, temporary_bonus=0):
+        from charutils import update_hp
+        hp_gain = randint(1,8) + 4
+        self.current_hp = min(self.current_hp+hp_gain, self.character_class.max_hp)
+        update_hp(self)
         result = self.bonus + temporary_bonus
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)

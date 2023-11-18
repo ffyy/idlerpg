@@ -32,6 +32,12 @@ def update_bonus(character: Character):
     cur.execute("UPDATE character SET bonus = ? WHERE id_ = ?", (character.bonus, character.id_))
     db.commit()
 
+def update_hp(character: Character):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("UPDATE character SET current_hp = ? WHERE id_ = ?", (character.current_hp, character.id_))
+    db.commit()
+
 def get_character_statistics(character: Character) -> CharacterStatistics:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()

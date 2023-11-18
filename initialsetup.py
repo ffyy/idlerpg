@@ -20,7 +20,7 @@ def do():
                          (3, "Hobbit", 5, 10, 0, 6000, 100, "Bad at everything, but starts with a magic ring (5d10)"),
                          (4, "Elf", 5, 20, 20, 17000, 100, "Just better at everything, but levels slowly (5d20+20)"),
                          (5, "Magic User", 1, 100, 10, 10000, 80, "Powerful but squishy (1d100+10)"),
-                         (6, "Cleric", 5, 20, 0, 10000, 90, "Can heal the party but is squishy (5d20)"),
+                         (6, "Cleric", 5, 20, 0, 10000, 80, "Can buff and heal, but is squishy (5d20)"),
                          (7, "Warlock", 5, 10, 60, 10000, 80, "Has a huge bonus which quickly runs out (5d10+60)"),
                          (8, "Hunter", 4, 20, 0, 10000, 100, "Not very strong, but all items are Hunter items (4d20)")]
 
