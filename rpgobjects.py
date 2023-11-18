@@ -74,12 +74,38 @@ class Character:
         self.character_class = character_class
         self.gear = gear
 
-    def roll_dice(self, temporary_bonus=0):
+    def roll_dice(self, temporary_bonus=0) -> int:
+        """Roll dice based on the class and bonuses of the character. In case of Warlock, the bonus is reduced after the dice are rolled.
+        Because of this, if it is necessary to know the bonus during the rolls (for outcome tables), the character's bonus should be checked BEFORE rolling.
+
+        Arguments:
+            temporary_bonus: integer which is added to this roll
+        """
+        if self.character_class.name=="Warlock":
+            return self.warlock_roll_dice(temporary_bonus)
         result = self.bonus + temporary_bonus
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)
             result += this_roll
         return result
+
+    def warlock_roll_dice(self, temporary_bonus=0) -> int:
+        from charutils import update_bonus
+        result = self.bonus + temporary_bonus
+        print("bonus to start with was " + str(self.bonus))
+        for die in range(self.character_class.dice):
+            this_roll = randint(1, self.character_class.die_size)
+            result += this_roll
+        self.bonus //= 2
+        print("bonus is now " + str(self.bonus))
+        update_bonus(self)
+        return result
+
+    def warlock_recharge_bonus(self):
+        from charutils import update_bonus
+        self.bonus = self.character_class.bonus
+        print("bonus is now " + str(self.bonus))
+        update_bonus(self)
 
     def roll_for_passive_xp(self) -> int:
         BASE_XP = 7200 #1 xp per second with default timescale 60

@@ -26,6 +26,12 @@ def update_db_gear(gear: Gear):
     db.commit()
     cur.close
 
+def update_bonus(character: Character):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("UPDATE character SET bonus = ? WHERE id_ = ?", (character.bonus, character.id_))
+    db.commit()
+
 def get_character_statistics(character: Character) -> CharacterStatistics:
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()

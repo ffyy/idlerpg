@@ -108,9 +108,9 @@ class DungeonMaster:
 
         completed_quest = dm_quest
         for adventurer in dm_quest.party:
+            completed_quest.party_bonuses.append(adventurer.bonus + adventurer.gear.gearscore)
             adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore)
             completed_quest.party_rolls.append(adventurer_roll)
-            completed_quest.party_bonuses.append(adventurer.bonus + adventurer.gear.gearscore)
 
         party_max_roll = 100*len(dm_quest.party)
         if (random.randint(1,100) <= 100*(sum(completed_quest.party_rolls) - dm_quest.quest_difficulty)/dm_quest.quest_difficulty) or (party_max_roll * QUEST_ITEM_THRESHOLD <= sum(completed_quest.party_rolls)):
@@ -277,9 +277,9 @@ class DungeonMaster:
         pvp_rolls = []
         pvp_bonuses = []
         for character in pvp_characters:
+            pvp_bonuses.append(character.bonus + character.gear.gearscore)
             character_roll = character.roll_dice(character.gear.gearscore)
             pvp_rolls.append(character_roll)
-            pvp_bonuses.append(character.bonus + character.gear.gearscore)
         xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
         hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
         if pvp_rolls[0] >= pvp_rolls[1]:
@@ -438,10 +438,10 @@ class DungeonMaster:
         defender_statistics = charutils.get_character_statistics(defender)
         defender_statistics.defences_attempted += 1
         for attacker in attackers:
-            defender_rolls.append(defender.roll_dice(defender.gear.gearscore))
             defender_bonuses.append(defender.bonus + defender.gear.gearscore)
-            attacker_rolls.append(attacker.roll_dice(attacker.gear.gearscore))
+            defender_rolls.append(defender.roll_dice(defender.gear.gearscore))
             attacker_bonuses.append(attacker.bonus + attacker.gear.gearscore)
+            attacker_rolls.append(attacker.roll_dice(attacker.gear.gearscore))
             current_attacker_statistics = charutils.get_character_statistics(attacker)
             current_attacker_statistics.ganks_attempted += 1
             charutils.update_character_statistics(current_attacker_statistics)
@@ -599,6 +599,32 @@ class DungeonMaster:
             charutils.update_character_statistics(defender_statistics)
             charutils.update_db_character(charutils.character_to_db_character(chosen_party[1]))
             return self.run_pvp_encounter(event_outcomes, chosen_party, None, description)
+        elif chosen_class.id_ == 7: #warlocks don't get free xp, they recharge their class bonus
+            class_quest_journal = "**A profane ritual!**\n"
+            if party_size == 1:
+                class_quest_journal = "".join([class_quest_journal, chosen_party[0].name])
+                class_quest_journal = " ".join([class_quest_journal, "the"])
+                class_quest_journal = " ".join([class_quest_journal, chosen_class.name])
+            else:
+                for hero in chosen_party:
+                    if hero != chosen_party[0] and hero != chosen_party[-1]:
+                        class_quest_journal = "".join([class_quest_journal, ", "])
+                    elif hero == chosen_party[-1]:
+                        class_quest_journal = " ".join([class_quest_journal, "and "])
+                    class_quest_journal = "".join([class_quest_journal, hero.name])
+            class_quest_journal = "".join([class_quest_journal, class_quest_hook])
+            class_quest_journal = ", ".join([class_quest_journal, "which recharged their evil magic!"])
+            for hero in chosen_party:
+                hero.warlock_recharge_bonus()
+                statistics = charutils.get_character_statistics(hero)
+                statistics.personal_quests += 1
+                charutils.update_character_statistics(statistics)
+                charutils.update_db_character(charutils.character_to_db_character(hero))
+            if event_outcomes:
+                event_outcomes.outcome_messages.append(class_quest_journal)
+            else:
+                event_outcomes = EventOutcomes([class_quest_journal], [])
+            return event_outcomes
 
         if party_size == 1:
             class_quest_journal = "**A hero did something!**\n"

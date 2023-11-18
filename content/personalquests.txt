@@ -79,3 +79,4 @@
 6, visited the brothel (as a medical professional)
 2, visited the brothel (as a client)
 6, aligned the chakras of all the wenches in the village
+7, did some warlock stuff
