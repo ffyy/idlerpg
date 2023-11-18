@@ -80,3 +80,4 @@
 2, visited the brothel (as a client)
 6, aligned the chakras of all the wenches in the village
 7, did some warlock stuff
+8, did some hunter stuff

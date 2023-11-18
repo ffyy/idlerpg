@@ -83,12 +83,17 @@ class DungeonMaster:
                 adventurer.current_xp += int(10000*(quest.quest_difficulty/(100*len(quest.party))))
                 charutils.update_db_character(charutils.character_to_db_character(adventurer))
         if "loot" in quest.quest_type:
-            if sum(character.character_class.id_ == 2 for character in quest.party) >= 2: #placeholder, replace fighter with hunter class once added
-                potential_fighters = list(character for character in quest.party if character.character_class.id_ == 2)
-                fighters = random.sample(potential_fighters, 2)
-                item_name = random.choice(ITEMS)
-                description = "**Disputed item!**\n" + fighters[0].name + " and " + fighters[1].name + " both wanted the magic item and decided to fight over it."
-                event_outcomes = self.run_pvp_encounter(event_outcomes, fighters, item_name, description)
+            hunter = next((character for character in quest.party if character.character_class.id_ == 8), None)
+            if hunter: #hunters will always need-roll everything
+                if sum(character.character_class.id_ == 8 for character in quest.party) >= 2: #if there are two or more hunters, two of them will fight over the item
+                    potential_fighters = list(character for character in quest.party if character.character_class.id_ == 8)
+                    fighters = random.sample(potential_fighters, 2)
+                    item_name = random.choice(ITEMS)
+                    description = "**Disputed item!**\n" + fighters[0].name + " and " + fighters[1].name + " both wanted the magic item and decided to fight over it."
+                    event_outcomes = self.run_pvp_encounter(event_outcomes, fighters, item_name, description)
+                else:
+                    hunter.gear.unattuned += 1
+                    charutils.update_db_gear(hunter.gear)
             else:
                 carry_index = quest.party_rolls.index(max(quest.party_rolls))
                 quest.party[carry_index].gear.unattuned += 1
@@ -137,12 +142,16 @@ class DungeonMaster:
                 completed_quest.quest_journal = " ".join([completed_quest.quest_journal, str(hp_gain)])
                 completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "HP."])
             if "loot" in dm_quest.quest_type:
-                if sum(character.character_class.id_ == 2 for character in dm_quest.party) >= 2:
+                if sum(character.character_class.id_ == 8 for character in dm_quest.party) >= 2:
                     completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "A magic item was also found, but it was contested."])
                 else:
                     carry_index = completed_quest.party_rolls.index(max(completed_quest.party_rolls))
                     item_name = random.choice(ITEMS)
-                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, completed_quest.party[carry_index].name])
+                    hunter = next((hero for hero in completed_quest.party if hero.character_class.id_ == 8), None)
+                    if hunter:
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, hunter.name])
+                    else:
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, completed_quest.party[carry_index].name])
                     completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "also found"])
                     if item_name[0] in "aeoiu":
                         completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "an"])

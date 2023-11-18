@@ -92,23 +92,20 @@ class Character:
     def warlock_roll_dice(self, temporary_bonus=0) -> int:
         from charutils import update_bonus
         result = self.bonus + temporary_bonus
-        print("bonus to start with was " + str(self.bonus))
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)
             result += this_roll
         self.bonus //= 2
-        print("bonus is now " + str(self.bonus))
         update_bonus(self)
         return result
 
     def warlock_recharge_bonus(self):
         from charutils import update_bonus
         self.bonus = self.character_class.bonus
-        print("bonus is now " + str(self.bonus))
         update_bonus(self)
 
     def roll_for_passive_xp(self) -> int:
-        BASE_XP = 7200 #1 xp per second with default timescale 60
+        BASE_XP = 7200 #2 xp per second with default timescale 60
         xp_multiplier = self.roll_dice()
         xp = int(BASE_XP * xp_multiplier / 100)
         return xp
