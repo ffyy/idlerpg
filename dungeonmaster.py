@@ -580,22 +580,7 @@ class DungeonMaster:
 
         charutils.update_character_statistics(defender_statistics)
 
-        defender_hp_bar = make_hp_bar(defender.current_hp, defender.character_class.max_hp)
-        defender_table_strings = []
-        defender_table_strings.append(["Name"])
-        defender_table_strings.append(["Class"])
-        defender_table_strings.append(["L"])
-        defender_table_strings.append(["GS"])
-        defender_table_strings.append(["XP"])
-        defender_table_strings.append(["HP"])
-        defender_table_strings[0].append(defender.name)
-        defender_table_strings[1].append(defender.character_class.name)
-        defender_table_strings[2].append(str(defender.level))
-        defender_table_strings[3].append(str(defender.gear.gearscore))
-        defender_table_strings[4].append(str(defender.current_xp) + "/" + str(defender.character_class.xp_per_level))
-        defender_table_strings[5].append(defender_hp_bar)
-
-        defender_table = make_table(defender_table_strings)
+        defender_table = make_boss_hp_bar(defender.name, defender.current_hp, defender.character_class.max_hp)
 
         attackers_table_strings = []
         attackers_table_strings.append(["Name"])
