@@ -10,6 +10,7 @@ import re
 from discord import app_commands
 from dotenv import load_dotenv
 from discord.ext import tasks
+from random import randint
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -177,13 +178,18 @@ class RegisterView(discord.ui.View):
     @discord.ui.select(placeholder="Select a class", options=character_classes, max_values=1)
     async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
         await interaction.response.defer()
-        response = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
+        if DEBUG_MODE == "1" and interaction.user.id == ADMIN_ID and "fake" in self.name:
+            response = charutils.register_character(self.name, int(select.values[0]), randint(1,10000000))
+        else:
+            response = charutils.register_character(self.name, int(select.values[0]), interaction.user.id)
         await interaction.followup.edit_message(interaction.message.id, content=("Enjoy idling!"), view=None)
         await interaction.channel.send(response)
 
 @client.tree.command(name="register", description="Create a new character")
 async def register(interaction: discord.Interaction, name: str):
     old_character = charutils.get_character_by_player_id(interaction.user.id)
+    if DEBUG_MODE == "1" and "fake" in name:
+        old_character = None
     if old_character is not None:
         response = "You already have a level " + str(old_character.level) + " " + old_character.character_class.name + " called " + old_character.name + ".\nUse /delete [name] to delete your old character first."
         await interaction.response.send_message(response, ephemeral=True)
