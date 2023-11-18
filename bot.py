@@ -66,6 +66,15 @@ client = RpgEngine(intents=intents)
 
 # DEBUG COMMANDS
 if DEBUG_MODE == "1":
+    @client.tree.command(name="raid",description="Run a raid boss encounter") #testing command
+    async def raid(interaction: discord.Interaction):
+        if interaction.user.id == ADMIN_ID:
+            await interaction.response.send_message(content="Running a raid boss encounter")
+            event_outcomes = DM.run_raidboss_encounter()
+            await send_event_messages(interaction.channel, event_outcomes)
+        else:
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
+
     @client.tree.command(name="gangbang",description="Run a group fight") #testing command
     async def gangbang(interaction: discord.Interaction):
         if interaction.user.id == ADMIN_ID:

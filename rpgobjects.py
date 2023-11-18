@@ -260,6 +260,36 @@ class LeaderboardEntry:
         self.gearscore = gearscore
         self.player_id = player_id
 
+class RaidBoss:
+    def __init__(
+            self,
+            id_,
+            name,
+            current_hp,
+            max_hp,
+            boss_type,
+            target_level
+    ):
+        self.id_ = id_
+        self.name = name
+        self.current_hp = current_hp
+        self.max_hp = max_hp
+        self.boss_type = boss_type
+        self.target_level = target_level
+
+    def calculate_damage_ratio(self, hero: Character) -> int:
+        """If the character's level matches the boss target level, they take 100% damage from the boss. If the level is less than half the target level, they take double damage.
+        If the level is double the boss target level, they take half damage.
+        """
+        if hero.level == 0:
+            return 2
+        ratio = self.target_level / hero.level
+        if ratio < 0.5:
+            ratio = 0.5
+        elif ratio > 2:
+            ratio = 2
+        return ratio
+
 class CharacterStatistics:
     def __init__(
             self,

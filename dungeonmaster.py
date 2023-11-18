@@ -8,9 +8,10 @@ PERSONAL_QUESTS = open("content/personalquests.txt").read().splitlines()
 SUCCESS_DESCRIPTIONS = open("content/successes.txt").read().splitlines()
 FAILURE_DESCRIPTIONS = open("content/failures.txt").read().splitlines()
 PVP_OUTCOMES = open("content/pvpoutcomes.txt").read().splitlines()
+RAID_OUTCOMES = open("content/raidoutcomes.txt").read().splitlines()
 ITEMS = open("content/items.txt").read().splitlines()
 DEFAULT_DAILY_EVENTS_LIST = [0, 1, 2]
-DEFAULT_MONTHLY_EVENTS_LIST = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+DEFAULT_MONTHLY_EVENTS_LIST = [2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 CLERIC_MAX_BUFF = 6
 QUEST_MINIMUM_DIFFICULTY = 20
 
@@ -28,7 +29,9 @@ class DungeonMaster:
             self):
         self.daily_events_list = []
         self.monthly_events_list = []
+        self.active_boss = None
         self.initialize_daily_events_list()
+        self.summon_new_boss()
 
     def is_pvp_allowed(self) -> bool:
         """Checks if there are enough characters in the world for random PvP events to trigger. Returns true in case there are at least 6 living characters.
@@ -87,6 +90,9 @@ class DungeonMaster:
             case 1:
                 print("running gangbang")
                 return self.run_group_pvp()
+            case 2:
+                print("running raid boss")
+                return self.run_raidboss_encounter()
 
     def initialize_daily_events_list(self):
         self.daily_events_list = []
@@ -97,6 +103,20 @@ class DungeonMaster:
         self.monthly_events_list = []
         for value in DEFAULT_MONTHLY_EVENTS_LIST:
             self.monthly_events_list.append(value)
+
+    def summon_new_boss(self):
+        bosses = charutils.get_all_bosses()
+        bosses.sort(key=lambda boss: (boss.target_level, boss.current_hp-boss.max_hp))
+        self.active_boss = bosses[0]
+
+    def update_current_boss(self):
+        if self.active_boss.current_hp > 0:
+            charutils.update_boss(self.active_boss)
+        else:
+            self.active_boss.current_hp = self.active_boss.max_hp
+            self.active_boss.target_level += 10
+            charutils.update_boss(self.active_boss)
+            self.summon_new_boss()
 
     def give_quest_rewards(self, quest: Quest, event_outcomes: EventOutcomes) -> EventOutcomes:
         """Adds rewards depending on Quest.quest_type values to the characters in Quest.party and saves the changes to database.
@@ -287,6 +307,134 @@ class DungeonMaster:
         if completed_quest.outcome == 1:
             event_outcomes = self.give_quest_rewards(completed_quest, event_outcomes)
 
+        return event_outcomes
+
+    def run_raidboss_encounter(self) -> EventOutcomes:
+        """Runs a fight where all living characters battle against one of the raid bosses in the world. Each character will take damage from the boss depending on the level
+        of the character and the difficulty modifier of the boss.
+        """
+
+        event_outcomes = EventOutcomes([],[])
+        party = charutils.get_all_characters()
+        random.shuffle(party)
+        boss_difficulty = random.randint(QUEST_MINIMUM_DIFFICULTY,100)
+        xp_reward = (self.active_boss.target_level * 10000)//len(party)
+
+        boss_journal = "**AN EPIC RAID!**\n"
+        boss_journal = "".join([boss_journal, "All the heroes in the world got together in an attempt to take down"])
+        boss_journal = " ".join([boss_journal, self.active_boss.name])
+        boss_journal = "".join([boss_journal, "!"])
+        boss_journal = " ".join([boss_journal, "This is a level"])
+        boss_journal = " ".join([boss_journal, str(self.active_boss.target_level)])
+        boss_journal = " ".join([boss_journal, "encounter. This time the target number to hold your own in the fight was"])
+        boss_journal = " ".join([boss_journal, str(boss_difficulty)])
+        boss_journal = "".join([boss_journal, "."])
+
+        buff = 0
+        buffer = next((hero for hero in party if hero.is_cleric()), None)
+        if buffer:
+            buff = randint(1,CLERIC_MAX_BUFF)
+            boss_journal = "\n".join([boss_journal, buffer.name])
+            boss_journal = " ".join([boss_journal, "gave everyone a buff, which gave them a bonus of"])
+            boss_journal = " ".join([boss_journal, str(buff)])
+            boss_journal = " ".join([boss_journal, "to their rolls."])
+
+        boss_starting_hp = self.active_boss.current_hp
+        party_rolls = []
+        party_bonuses = []
+        hp_changes = []
+        deaths = []
+        killer = None
+        for adventurer in party:
+            party_bonuses.append(adventurer.gear.gearscore + adventurer.bonus + buff)
+            adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore + buff)
+            party_rolls.append(adventurer_roll)
+            damage = adventurer_roll-boss_difficulty
+            if damage >= 0:
+                hp_changes.append(damage)
+                if self.active_boss.current_hp > 0:
+                    self.active_boss.current_hp -= damage
+                    if self.active_boss.current_hp <= 0:
+                        killer = adventurer
+                        killer.gear.unattuned += 1
+                        killer.current_xp += xp_reward
+            else:
+                ratio = self.active_boss.calculate_damage_ratio(adventurer)
+                damage_to_hero = int(abs(damage) * ratio)
+                hp_changes.append(damage_to_hero)
+                adventurer.current_hp -= damage_to_hero
+                if adventurer.current_hp > 0:
+                    charutils.update_db_character(charutils.character_to_db_character(adventurer))
+                elif adventurer.current_hp <= 0:
+                    deaths.append(adventurer)
+                    event_outcomes.deaths.append(charutils.get_discord_id_by_character(adventurer))
+                    charutils.reincarnate(adventurer, -3)
+
+        boss_journal = " ".join([boss_journal, "During the battle,"])
+        boss_journal = " ".join([boss_journal, self.active_boss.name])
+        boss_journal = " ".join([boss_journal, "took a total of"])
+        boss_journal = " ".join([boss_journal, str(boss_starting_hp - self.active_boss.current_hp)])
+        boss_journal = " ".join([boss_journal, "damage."])
+        if deaths:
+            boss_journal = " ".join([boss_journal, "Unfortunately, all that damage came at the cost of heroic sacrifice. "])
+            for hero in deaths:
+                if hero != deaths[0] and hero != deaths[-1]:
+                    boss_journal = "".join([boss_journal, ", "])
+                elif hero != deaths[0] and hero == deaths[-1]:
+                    boss_journal = " ".join([boss_journal, "and "])
+                boss_journal = "".join([boss_journal, hero.name])
+            boss_journal = " ".join([boss_journal, "fell in the battle and had to be reincarnated."])
+        if killer:
+            boss_journal = "\n".join([boss_journal, killer.name])
+            boss_journal = " ".join([boss_journal, random.choice(RAID_OUTCOMES)])
+            boss_journal = " ".join([boss_journal, "and struck the killing blow!"])
+            boss_journal = "\n".join([boss_journal, "Everyone who survived received"])
+            boss_journal = " ".join([boss_journal, str(xp_reward)])
+            boss_journal = " ".join([boss_journal, "xp, while"])
+            boss_journal = " ".join([boss_journal, killer.name])
+            boss_journal = " ".join([boss_journal, "got double the xp and a magic item!"])
+            for adventurer in party:
+                if adventurer not in deaths:
+                    adventurer.current_xp += xp_reward
+                    charutils.update_db_character(charutils.character_to_db_character(adventurer))
+            boss_journal = "\n".join([boss_journal, self.active_boss.name])
+            boss_journal = " ".join([boss_journal, "was slain, but will eventually come back, stronger than ever!"])
+            boss_journal = "\n".join([boss_journal, "**Success!**"])
+        else:
+            boss_journal = "\n".join([boss_journal, self.active_boss.name])
+            boss_journal = " ".join([boss_journal, "survived the epic raid and will continue terrorizing the world!"])
+            boss_journal = "\n".join([boss_journal, "**Failure!**"])
+
+        boss_table = make_boss_hp_bar(self.active_boss.name, self.active_boss.current_hp, self.active_boss.max_hp)
+
+        """hero_strings = []
+        hero_strings.append(["Hero"])
+        hero_strings.append(["Class"])
+        hero_strings.append(["Level"])
+        hero_strings.append(["GS"])
+        hero_strings.append(["HP"])
+        hero_strings.append(["Damage"])
+        hero_strings.append(["Roll"])
+
+        for i,hero in enumerate(party):
+            raw_roll = party_rolls[i] - party_bonuses[i]
+            hero_strings[0].append(hero.name)
+            hero_strings[1].append(hero.character_class.name)
+            hero_strings[2].append(str(hero.level))
+            hero_strings[3].append(str(hero.gear.gearscore))
+            hero_strings[4].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
+            hero_strings[5].append(str(hp_changes[i]))
+            hero_strings[6].append(str(party_rolls[i]) + " (" + str(raw_roll) + "+" + str(party_bonuses[i]) + ")")
+
+        hero_table = make_table(hero_strings)"""
+
+        boss_journal = "".join([boss_journal, boss_table])
+        #boss_journal = "".join([boss_journal, "VS"])
+        #boss_journal = "".join([boss_journal, hero_table])
+
+        event_outcomes.outcome_messages.append(boss_journal)
+
+        self.update_current_boss()
         return event_outcomes
 
     def run_pvp_encounter(self, event_outcomes: EventOutcomes=None, fighters: list[Character]=None, item_reward: str=None, description: str=None) -> EventOutcomes:
@@ -682,7 +830,7 @@ class DungeonMaster:
         class_quest_journal = ", ".join([class_quest_journal, "which earned them"])
         class_quest_journal = " ".join([class_quest_journal, str(xp_reward)])
         class_quest_journal = " ".join([class_quest_journal, "xp."])
-        if party_size == 1 & chosen_party[0].is_thief():
+        if party_size == 1 and chosen_party[0].is_thief() and randint(1,2) == 2:
             class_quest_journal = " ".join([class_quest_journal, "By working alone,"])
             class_quest_journal = " ".join([class_quest_journal, chosen_party[0].name])
             class_quest_journal = " ".join([class_quest_journal, "also found"])

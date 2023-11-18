@@ -195,6 +195,24 @@ def get_all_characters() -> list[Character]:
         characters.append(get_character_by_id(id_[0]))
     return characters
 
+def get_all_bosses() -> list[RaidBoss]:
+    bosses = []
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM raid_boss")
+    db_bosses = cur.fetchall()
+    cur.close()
+    for db_boss in db_bosses:
+        bosses.append(RaidBoss(db_boss[0],db_boss[1],db_boss[2],db_boss[3],db_boss[4],db_boss[5]))
+    return bosses
+
+def update_boss(boss: RaidBoss):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("UPDATE raid_boss SET current_hp = ?, target_level = ? WHERE id_ = ?", (boss.current_hp, boss.target_level, boss.id_))
+    db.commit()
+    cur.close()
+
 def get_all_dead_characters() -> list[DeadCharacter]:
     dead_characters = []
     db = sqlite3.connect(DB_PATH)

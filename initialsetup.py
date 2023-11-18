@@ -24,6 +24,9 @@ def do():
                          (7, "Warlock", 5, 10, 60, 10000, 80, "Has a huge bonus which quickly runs out (5d10+60)"),
                          (8, "Hunter", 4, 20, 0, 10000, 100, "Not very strong, but all items are Hunter items (4d20)")]
 
+    raid_bosses = [(1, "Doom the Dragonator", 500, 500, 1, 10),
+                   (2, "Meat the Tank", 800, 800, 2, 10)]
+
     print("creating new tables")
     cur = db.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS character(id_ INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, level INTEGER NOT NULL, bonus INTEGER NOT NULL, current_xp INTEGER NOT NULL, current_hp INTEGER NOT NULL, class_id INTEGER NOT NULL, gear_id INTEGER)")
@@ -32,7 +35,9 @@ def do():
     cur.execute("CREATE TABLE IF NOT EXISTS gear(id_ INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER NOT NULL, unattuned INTEGER NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id TEXT UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS statistics(character_id INTEGER NOT NULL, quests_attempted INTEGER NOT NULL, quests_won INTEGER NOT NULL, ganks_attempted INTEGER NOT NULL, ganks_won INTEGER NOT NULL, defences_attempted INTEGER NOT NULL, defences_won INTEGER NOT NULL, pks INTEGER NOT NULL, personal_quests INTEGER NOT NULL, create_timestamp INTEGER NOT NULL, delete_timestamp INTEGER)")
+    cur.execute("CREATE TABLE IF NOT EXISTS raid_boss(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, current_hp INTEGER NOT NULL, max_hp INTEGER NOT NULL, boss_type INTEGER NOT NULL, target_level INTEGER NOT NULL)")
     cur.executemany("INSERT INTO class VALUES (?, ?, ?, ?, ?, ?, ?, ?)", character_classes)
+    cur.executemany("INSERT INTO raid_boss VALUES (?, ?, ?, ?, ?, ?)", raid_bosses)
     db.commit()
 
     create_config()
