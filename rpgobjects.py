@@ -129,8 +129,8 @@ class Character:
         Arguments:
             temporary_bonus: integer which is added to this roll
         """
-        if self.is_cleric: return self.cleric_roll_dice(temporary_bonus)
-        if self.is_warlock: return self.warlock_roll_dice(temporary_bonus)
+        if self.is_cleric(): return self.cleric_roll_dice(temporary_bonus)
+        if self.is_warlock(): return self.warlock_roll_dice(temporary_bonus)
         result = self.bonus + temporary_bonus
         for die in range(self.character_class.dice):
             this_roll = randint(1, self.character_class.die_size)
@@ -175,6 +175,8 @@ class Character:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
             rested_character.current_hp = rested_character.character_class.max_hp
+            if self.is_warlock() and self.bonus < 5:
+                self.warlock_recharge_bonus()
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0
