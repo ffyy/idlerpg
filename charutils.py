@@ -381,6 +381,8 @@ def get_graveyard(name, users_list, class_filter) -> str:
                 leaderboard_lists[9].append("Stopped existing")
             elif character.death_reason == -1:
                 leaderboard_lists[9].append("Natural causes")
+            elif character.death_reason == -3:
+                leaderboard_lists[9].append("World boss")
             else:
                 killer_name = get_character_by_id(character.death_reason).name
                 leaderboard_lists[9].append(killer_name)
