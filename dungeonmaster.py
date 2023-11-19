@@ -346,8 +346,9 @@ class DungeonMaster:
         deaths = []
         killer = None
         for adventurer in party:
+            buff += max((adventurer.level - self.active_boss.target_level), 0)
             party_bonuses.append(adventurer.gear.gearscore + adventurer.bonus + buff)
-            adventurer_roll = adventurer.roll_dice(adventurer.gear.gearscore + buff)
+            adventurer_roll = max(adventurer.roll_dice(adventurer.gear.gearscore + buff), 1)
             party_rolls.append(adventurer_roll)
             damage = adventurer_roll-boss_difficulty
             if damage >= 0:
@@ -360,12 +361,13 @@ class DungeonMaster:
                         killer.current_xp += xp_reward
             else:
                 ratio = self.active_boss.calculate_damage_ratio(adventurer)
-                damage_to_hero = int(abs(damage) * ratio)
+                damage_to_hero = int(damage * ratio)
                 hp_changes.append(damage_to_hero)
-                adventurer.current_hp -= damage_to_hero
+                adventurer.current_hp -= abs(damage_to_hero)
                 if adventurer.current_hp > 0:
                     charutils.update_db_character(charutils.character_to_db_character(adventurer))
                 elif adventurer.current_hp <= 0:
+                    adventurer.current_hp = 0
                     deaths.append(adventurer)
                     event_outcomes.deaths.append(charutils.get_discord_id_by_character(adventurer))
                     charutils.reincarnate(adventurer, -3)
@@ -407,30 +409,26 @@ class DungeonMaster:
 
         boss_table = make_boss_hp_bar(self.active_boss.name, self.active_boss.current_hp, self.active_boss.max_hp)
 
-        """hero_strings = []
+        hero_strings = []
         hero_strings.append(["Hero"])
-        hero_strings.append(["Class"])
-        hero_strings.append(["Level"])
-        hero_strings.append(["GS"])
+        hero_strings.append(["L"])
         hero_strings.append(["HP"])
-        hero_strings.append(["Damage"])
+        hero_strings.append(["DMG"])
         hero_strings.append(["Roll"])
 
         for i,hero in enumerate(party):
             raw_roll = party_rolls[i] - party_bonuses[i]
             hero_strings[0].append(hero.name)
-            hero_strings[1].append(hero.character_class.name)
-            hero_strings[2].append(str(hero.level))
-            hero_strings[3].append(str(hero.gear.gearscore))
-            hero_strings[4].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
-            hero_strings[5].append(str(hp_changes[i]))
-            hero_strings[6].append(str(party_rolls[i]) + " (" + str(raw_roll) + "+" + str(party_bonuses[i]) + ")")
+            hero_strings[1].append(str(hero.level))
+            hero_strings[2].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
+            hero_strings[3].append(str(hp_changes[i]))
+            hero_strings[4].append(str(party_rolls[i]) + " (" + str(raw_roll) + "+" + str(party_bonuses[i]) + ")")
 
-        hero_table = make_table(hero_strings)"""
+        hero_table = make_table(hero_strings)
 
         boss_journal = "".join([boss_journal, boss_table])
-        #boss_journal = "".join([boss_journal, "VS"])
-        #boss_journal = "".join([boss_journal, hero_table])
+        boss_journal = "".join([boss_journal, "VS"])
+        boss_journal = "".join([boss_journal, hero_table])
 
         event_outcomes.outcome_messages.append(boss_journal)
 
