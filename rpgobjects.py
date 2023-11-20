@@ -187,7 +187,7 @@ class Character:
         return xp
 
     def take_long_rest(self):
-        rested_character = Character(self.id_, self.name, self.level, self.bonus, self.current_xp, self.current_hp, self.character_class, self.gear)
+        rested_character = Character(self.id_, self.name, self.level, self.bonus, self.current_xp, self.current_hp, self.character_class, self.gear, self.aegis)
         while rested_character.current_xp >= self.character_class.xp_per_level:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
