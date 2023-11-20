@@ -913,7 +913,7 @@ class DungeonMaster:
 
         old_characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
         for old_character in old_characters:
-            resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.bonus, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear)
+            resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.bonus, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear, old_character.aegis)
             resting_character.current_xp += resting_character.roll_for_passive_xp()
             rested_characters.append(resting_character.take_long_rest())
 
