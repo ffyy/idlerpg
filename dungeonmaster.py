@@ -114,7 +114,7 @@ class DungeonMaster:
             charutils.update_boss(self.active_boss)
         else:
             self.active_boss.current_hp = self.active_boss.max_hp
-            self.active_boss.target_level += 10
+            self.active_boss.target_level = self.active_boss.target_level * 2
             charutils.update_boss(self.active_boss)
             self.summon_new_boss()
 
@@ -237,11 +237,15 @@ class DungeonMaster:
                 if character.current_hp > 0:
                     charutils.update_db_character(charutils.character_to_db_character(character))
                 elif character.current_hp <= 0:
-                    character.current_hp = 0
-                    completed_quest.death_notices.append(charutils.get_discord_id_by_character(character))
-                    charutils.reincarnate(character, -1)
-                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, character.name])
-                    completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "died and was reincarnated at level 0!"])
+                    discord_id = charutils.get_discord_id_by_character(character)
+                    permanent_death = character.die(-1)
+                    if permanent_death:
+                        completed_quest.death_notices.append(discord_id)
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, character.name])
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "died and was reincarnated at level 0!"])
+                    else:
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, character.name])
+                        completed_quest.quest_journal = " ".join([completed_quest.quest_journal, "would have died but was saved by the Aegis of Immortality!"])
             completed_quest.quest_journal = "\n".join([completed_quest.quest_journal, str(sum(completed_quest.party_rolls))])
             completed_quest.quest_journal = "/".join([completed_quest.quest_journal, str(dm_quest.quest_difficulty)])
             completed_quest.quest_journal = " - ".join([completed_quest.quest_journal, "**Failure!**"])
@@ -318,7 +322,7 @@ class DungeonMaster:
         party = charutils.get_all_characters()
         random.shuffle(party)
         boss_difficulty = random.randint(QUEST_MINIMUM_DIFFICULTY,100)
-        xp_reward = (self.active_boss.target_level * 10000)//len(party)
+        xp_reward = 10000
 
         boss_journal = "**AN EPIC RAID!**\n"
         boss_journal = "".join([boss_journal, "All the heroes in the world got together in an attempt to take down"])
@@ -344,11 +348,12 @@ class DungeonMaster:
         party_bonuses = []
         hp_changes = []
         deaths = []
+        aegises_lost = []
         killer = None
         for adventurer in party:
-            buff += max((adventurer.level - self.active_boss.target_level), 0)
-            party_bonuses.append(adventurer.gear.gearscore + adventurer.bonus + buff)
-            adventurer_roll = max(adventurer.roll_dice(adventurer.gear.gearscore + buff), 1)
+            personal_buff = buff + max((adventurer.level - self.active_boss.target_level), 0)
+            party_bonuses.append(adventurer.gear.gearscore + adventurer.bonus + personal_buff)
+            adventurer_roll = max(adventurer.roll_dice(adventurer.gear.gearscore + personal_buff), 1)
             party_rolls.append(adventurer_roll)
             damage = adventurer_roll-boss_difficulty
             if damage >= 0:
@@ -358,7 +363,10 @@ class DungeonMaster:
                     if self.active_boss.current_hp <= 0:
                         killer = adventurer
                         killer.gear.unattuned += 1
-                        killer.current_xp += xp_reward
+                        killer.aegis = 1
+                        charutils.update_db_character(killer)
+                        charutils.update_db_gear(killer.gear)
+                        break
             else:
                 ratio = self.active_boss.calculate_damage_ratio(adventurer)
                 damage_to_hero = int(damage * ratio)
@@ -367,10 +375,13 @@ class DungeonMaster:
                 if adventurer.current_hp > 0:
                     charutils.update_db_character(charutils.character_to_db_character(adventurer))
                 elif adventurer.current_hp <= 0:
-                    adventurer.current_hp = 0
-                    deaths.append(adventurer)
-                    event_outcomes.deaths.append(charutils.get_discord_id_by_character(adventurer))
-                    charutils.reincarnate(adventurer, -3)
+                    discord_id = charutils.get_discord_id_by_character(adventurer)
+                    permanent_death = adventurer.die(-3)
+                    if permanent_death:
+                        deaths.append(adventurer)
+                        event_outcomes.deaths.append(discord_id)
+                    else:
+                        aegises_lost.append(adventurer)
 
         boss_journal = " ".join([boss_journal, "During the battle,"])
         boss_journal = " ".join([boss_journal, self.active_boss.name])
@@ -378,7 +389,7 @@ class DungeonMaster:
         boss_journal = " ".join([boss_journal, str(boss_starting_hp - self.active_boss.current_hp)])
         boss_journal = " ".join([boss_journal, "damage."])
         if deaths:
-            boss_journal = " ".join([boss_journal, "Unfortunately, all that damage came at the cost of heroic sacrifice. "])
+            boss_journal = " ".join([boss_journal, "Unfortunately, that came at the cost of heroic sacrifice. "])
             for hero in deaths:
                 if hero != deaths[0] and hero != deaths[-1]:
                     boss_journal = "".join([boss_journal, ", "])
@@ -386,6 +397,15 @@ class DungeonMaster:
                     boss_journal = " ".join([boss_journal, "and "])
                 boss_journal = "".join([boss_journal, hero.name])
             boss_journal = " ".join([boss_journal, "fell in the battle and had to be reincarnated."])
+        if aegises_lost:
+            boss_journal = "".join([boss_journal, " "])
+            for hero in aegises_lost:
+                if hero != aegises_lost[0] and hero != aegises_lost[-1]:
+                    boss_journal = "".join([boss_journal, ", "])
+                elif hero != aegises_lost[0] and hero == aegises_lost[-1]:
+                    boss_journal = " ".join([boss_journal, "and "])
+                boss_journal = "".join([boss_journal, hero.name])
+            boss_journal = " ".join([boss_journal, "would have died, but survived thanks to the Aegis of Immortality."])
         if killer:
             boss_journal = "\n".join([boss_journal, killer.name])
             boss_journal = " ".join([boss_journal, random.choice(RAID_OUTCOMES)])
@@ -394,7 +414,7 @@ class DungeonMaster:
             boss_journal = " ".join([boss_journal, str(xp_reward)])
             boss_journal = " ".join([boss_journal, "xp, while"])
             boss_journal = " ".join([boss_journal, killer.name])
-            boss_journal = " ".join([boss_journal, "got double the xp and a magic item!"])
+            boss_journal = " ".join([boss_journal, "also found a magic item and an Aegis of Immortality!"])
             for adventurer in party:
                 if adventurer not in deaths:
                     adventurer.current_xp += xp_reward
@@ -417,12 +437,13 @@ class DungeonMaster:
         hero_strings.append(["Roll"])
 
         for i,hero in enumerate(party):
-            raw_roll = party_rolls[i] - party_bonuses[i]
-            hero_strings[0].append(hero.name)
-            hero_strings[1].append(str(hero.level))
-            hero_strings[2].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
-            hero_strings[3].append(str(hp_changes[i]))
-            hero_strings[4].append(str(party_rolls[i]) + " (" + str(raw_roll) + "+" + str(party_bonuses[i]) + ")")
+            if i < len(party_rolls):
+                raw_roll = party_rolls[i] - party_bonuses[i]
+                hero_strings[0].append(hero.name)
+                hero_strings[1].append(str(hero.level))
+                hero_strings[2].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
+                hero_strings[3].append(str(hp_changes[i]))
+                hero_strings[4].append(str(party_rolls[i]) + " (" + str(raw_roll) + "+" + str(party_bonuses[i]) + ")")
 
         hero_table = make_table(hero_strings)
 
@@ -491,18 +512,21 @@ class DungeonMaster:
             if pvp_characters[1].current_hp > 0:
                 charutils.update_db_character(charutils.character_to_db_character(pvp_characters[1]))
             elif pvp_characters[1].current_hp <= 0:
-                pvp_characters[1].current_hp = 0
-                ganker_statistics.pks += 1
-                deaths.append(charutils.get_discord_id_by_character(pvp_characters[1]))
-                charutils.reincarnate(pvp_characters[1], pvp_characters[0].id_)
-                pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
-                pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
-                #start handling loot
-                pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-                pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
-                items_found = randint(1, max(pvp_characters[1].gear.gearscore, 1))
-                pvp_characters[0].gear.unattuned += items_found
                 discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
+                permanent_death = pvp_characters[1].die(pvp_characters[0].id_)
+                if permanent_death:
+                    ganker_statistics.pks += 1
+                    deaths.append(discord_id)
+                    pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
+                    pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                    #start handling loot
+                    pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+                    pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
+                    items_found = randint(1, max(pvp_characters[1].gear.gearscore, 1))
+                    pvp_characters[0].gear.unattuned += items_found
+                else:
+                    pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
+                    pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality!"])
             #fill outcome statistics in journal
             if item_reward:
                 pvp_journal = "\n".join([pvp_journal, pvp_characters[0].name])
@@ -538,17 +562,21 @@ class DungeonMaster:
             if pvp_characters[0].current_hp > 0:
                 charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
             elif pvp_characters[0].current_hp <= 0:
-                deaths.append(charutils.get_discord_id_by_character(pvp_characters[0]))
-                pvp_characters[0].current_hp = 0
-                defender_statistics.pks += 1
-                charutils.reincarnate(pvp_characters[0], pvp_characters[1].id_)
-                pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
-                pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
-                #start handling loot
-                pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
-                pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
-                items_found = randint(1, max(pvp_characters[0].gear.gearscore, 1))
-                pvp_characters[1].gear.unattuned += items_found
+                discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
+                permanent_death = pvp_characters[0].die(pvp_characters[1].id_)
+                if permanent_death:
+                    deaths.append(discord_id)
+                    defender_statistics.pks += 1
+                    pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+                    pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                    #start handling loot
+                    pvp_journal = " ".join([pvp_journal, pvp_characters[1].name])
+                    pvp_journal = " ".join([pvp_journal, "looted a few magic items."])
+                    items_found = randint(1, max(pvp_characters[0].gear.gearscore, 1))
+                    pvp_characters[1].gear.unattuned += items_found
+                else:
+                    pvp_journal = " ".join([pvp_journal, pvp_characters[0].name])
+                    pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality!"])
             #fill outcome statistics in journal
             if item_reward:
                 pvp_journal = "\n".join([pvp_journal, pvp_characters[1].name])
@@ -678,12 +706,16 @@ class DungeonMaster:
                 if attacker.current_hp > 0:
                     charutils.update_db_character(charutils.character_to_db_character(attacker))
                 elif attacker.current_hp <= 0:
-                    attacker.current_hp = 0
-                    pvp_journal = " ".join([pvp_journal, attacker.name])
-                    pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
-                    event_outcomes.deaths.append(charutils.get_discord_id_by_character(attacker))
-                    charutils.reincarnate(attacker, defender.id_)
-                    defender_statistics.pks += 1
+                    discord_id = charutils.get_discord_id_by_character(attacker)
+                    permanent_death = attacker.die(defender.id_)
+                    if permanent_death:
+                        pvp_journal = " ".join([pvp_journal, attacker.name])
+                        pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                        event_outcomes.deaths.append(discord_id)
+                        defender_statistics.pks += 1
+                    else:
+                        pvp_journal = " ".join([pvp_journal, attacker.name])
+                        pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality!"])
             else:
                 defender_hp_loss += hp_loss
         if defender_hp_loss > 0:
@@ -697,11 +729,16 @@ class DungeonMaster:
             if defender.current_hp > 0:
                 charutils.update_db_character(charutils.character_to_db_character(defender))
             elif defender.current_hp <= 0:
-                defender.current_hp = 0
-                pvp_journal = " ".join([pvp_journal, defender.name])
-                pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
-                event_outcomes.deaths.append(charutils.get_discord_id_by_character(defender))
-                charutils.reincarnate(defender, attackers[carry_index].id_)
+                discord_id = charutils.get_discord_id_by_character(defender)
+                permanent_death = defender.die(attackers[carry_index].id_)
+                if permanent_death:
+                    pvp_journal = " ".join([pvp_journal, defender.name])
+                    pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                    event_outcomes.deaths.append(discord_id)
+                else:
+                    pvp_journal = " ".join([pvp_journal, defender.name])
+                    pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality!"])
+
 
         if sum(defender_rolls) >= sum(attacker_rolls):
             defender.current_xp += xp_reward

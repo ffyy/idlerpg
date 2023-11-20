@@ -12,12 +12,16 @@ DB_PATH = os.getenv("DB_PATH")
 
 #DB FUNCTIONS
 
-def update_db_character(character: CharacterDB):
-    db = sqlite3.connect(DB_PATH)
-    cur = db.cursor()
-    cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, current_hp = ?, class_id = ?, gear_id = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.current_hp, character.class_id, character.gear_id, character.id_))
-    db.commit()
-    cur.close()
+def update_db_character(character):
+    if type(character) == Character:
+        db_character = update_db_character(character_to_db_character(character))
+        update_db_character(db_character)
+    elif type(character) == CharacterDB:
+        db = sqlite3.connect(DB_PATH)
+        cur = db.cursor()
+        cur.execute("UPDATE character SET name = ?, level = ?, current_xp = ?, current_hp = ?, class_id = ?, gear_id = ?, aegis = ? WHERE id_ = ?", (character.name, character.level, character.current_xp, character.current_hp, character.class_id, character.gear_id, character.aegis, character.id_))
+        db.commit()
+        cur.close()
 
 def update_db_gear(gear: Gear):
     db = sqlite3.connect(DB_PATH)
@@ -65,8 +69,7 @@ def update_character_statistics(stats: CharacterStatistics):
 
 def register_character(name, class_id, player_id) -> Character:
     character_class = get_class(class_id)
-    character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None)
-    class_name = character_class.name
+    character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None, 0)
 
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -76,13 +79,12 @@ def register_character(name, class_id, player_id) -> Character:
         else:
             cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (0,0)")
         character.gear_id = cur.lastrowid
-        cur.execute("INSERT INTO character(name,level,bonus,current_xp,current_hp,class_id,gear_id) VALUES (?,?,?,?,?,?,?)", (character.name, character.level, character.bonus, character.current_xp, character_class.max_hp, character.class_id, character.gear_id))
+        cur.execute("INSERT INTO character(name,level,bonus,current_xp,current_hp,class_id,gear_id,aegis) VALUES (?,?,?,?,?,?,?,?)", (character.name, character.level, character.bonus, character.current_xp, character_class.max_hp, character.class_id, character.gear_id, character.aegis))
         character.id_ = cur.lastrowid
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
         cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, pks, personal_quests, create_timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)", (character.id_, 0, 0, 0, 0, 0, 0, 0, 0, int(time.time())))
         db.commit()
         cur.close()
-        #return "A hero called " + character.name + " showed up! " + character.name + " is a " + class_name + "."
         created_character = db_character_to_character(character)
         return created_character
     except:
@@ -100,6 +102,12 @@ def delete_character_by_id(player_id):
     return deleted_character
 
 def delete_character(character: Character, reason):
+    """Reasons:
+        -1: Died in a quest
+        -2: Deleted by player
+        -3: Died to raid boss
+        Other: id_ of the character who killed this character
+    """
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     player_id = get_discord_id_by_character(character)
@@ -110,10 +118,11 @@ def delete_character(character: Character, reason):
     db.commit()
     cur.close()
 
-def reincarnate(character: Character, reason):
+def reincarnate(character: Character, reason) -> Character:
     player_id = get_discord_id_by_character(character)
     delete_character(character, reason)
-    register_character(character.name, character.character_class.id_, player_id)
+    new_character = register_character(character.name, character.character_class.id_, player_id)
+    return new_character
 
 def register_player(player_id, character_id):
     db = sqlite3.connect(DB_PATH)
@@ -131,7 +140,7 @@ def get_character_by_name(name) -> Character:
     if db_character is None:
         return None
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8])
         character = db_character_to_character(data_character)
         return character
 
@@ -149,7 +158,7 @@ def get_character_by_id(id_):
         cur.close()
         return dead_character
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8])
         character = db_character_to_character(data_character)
         cur.close()
         return character
@@ -176,7 +185,7 @@ def get_character_by_player_id(player_id) -> Character:
         db_character = cur.fetchone()
     cur.close()
     if db_character is not None:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8])
         character = db_character_to_character(data_character)
         return character
     else:
@@ -268,13 +277,13 @@ def get_gear(id) -> Gear:
         return None
 
 def character_to_db_character(character: Character) -> CharacterDB:
-    db_character = CharacterDB(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_)
+    db_character = CharacterDB(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_, character.aegis)
     return db_character
 
 def db_character_to_character(character: CharacterDB) -> Character:
     game_class = get_class(character.class_id)
     game_gear = get_gear(character.gear_id)
-    game_character = Character(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, game_class, game_gear)
+    game_character = Character(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, game_class, game_gear, character.aegis)
     return game_character
 
 def is_name_valid(name) -> bool:

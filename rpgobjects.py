@@ -42,7 +42,8 @@ class CharacterDB:
             current_xp,
             current_hp,
             class_id,
-            gear_id
+            gear_id,
+            aegis
             ):
         self.id_ = id_
         self.name = name
@@ -52,6 +53,7 @@ class CharacterDB:
         self.current_hp = current_hp
         self.class_id = class_id
         self.gear_id = gear_id
+        self.aegis = aegis
 
 class Character:
     def __init__(
@@ -64,6 +66,7 @@ class Character:
             current_hp,
             character_class: CharacterClass,
             gear: Gear,
+            aegis
             ):
         self.id_ = id_
         self.name = name
@@ -73,6 +76,20 @@ class Character:
         self.current_hp = current_hp
         self.character_class = character_class
         self.gear = gear
+        self.aegis = aegis
+
+    def die(self, reason=-1) -> bool:
+        if self.aegis == 1:
+            from charutils import update_db_character
+            self.aegis = 0
+            self.current_hp = self.character_class.max_hp
+            update_db_character(self)
+            return False
+        else:
+            from charutils import reincarnate
+            self.current_hp = 0
+            reincarnate(self, reason)
+            return True
 
     def is_thief(self) -> bool:
         if self.character_class.id_ == 1:
