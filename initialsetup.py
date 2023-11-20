@@ -24,8 +24,8 @@ def do():
                          (7, "Warlock", 5, 10, 60, 10000, 100, "Has a huge bonus which quickly runs out (5d10+60)"),
                          (8, "Hunter", 4, 20, 0, 10000, 100, "Not very strong, but all items are Hunter items (4d20)")]
 
-    raid_bosses = [(1, "Doom the Dragonator", 200, 200, 1, 10),
-                   (2, "Meat the Rust Monster", 400, 400, 2, 10)]
+    raid_bosses = [(1, "Doom the Dragonator", 300, 300, 1, 10),
+                   (2, "Meat the Rust Monster", 200, 200, 2, 10)]
 
     print("creating new tables")
     cur = db.cursor()
