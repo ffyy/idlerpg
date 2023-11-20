@@ -31,9 +31,9 @@ improvements after the second playtest:
 improvements after beta season:
 - add warlock (strong but cursed), hunter (weak but need-rolls all gear) classes ✔
 - rework cleric ✔
-- add death descriptions to graveyard
+- add death descriptions to graveyard ✔
 - allow users to select which columns to show in reports
-- tie some sort of progression to character level
+- tie some sort of progression to character level ✔
 - triggered pvp events (fight over gear, group up to gank the top character etc) ✔
 - try if encompassing entire adventuring day in one message works better ❌
 - randomize order of the events in the day ✔
