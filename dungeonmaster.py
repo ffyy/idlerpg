@@ -371,41 +371,50 @@ class DungeonMaster:
                 ratio = self.active_boss.calculate_damage_ratio(adventurer)
                 damage_to_hero = int(damage * ratio)
                 hp_changes.append(damage_to_hero)
-                adventurer.current_hp -= abs(damage_to_hero)
-                if adventurer.current_hp > 0:
-                    charutils.update_db_character(charutils.character_to_db_character(adventurer))
-                elif adventurer.current_hp <= 0:
-                    discord_id = charutils.get_discord_id_by_character(adventurer)
-                    permanent_death = adventurer.die(-3)
-                    if permanent_death:
-                        deaths.append(adventurer)
-                        event_outcomes.deaths.append(discord_id)
-                    else:
-                        aegises_lost.append(adventurer)
+                if self.active_boss.boss_type == 1: #type 1 bosses just deal damage
+                    adventurer.current_hp -= abs(damage_to_hero)
+                    if adventurer.current_hp > 0:
+                        charutils.update_db_character(charutils.character_to_db_character(adventurer))
+                    elif adventurer.current_hp <= 0:
+                        discord_id = charutils.get_discord_id_by_character(adventurer)
+                        permanent_death = adventurer.die(-3)
+                        if permanent_death:
+                            deaths.append(adventurer)
+                            event_outcomes.deaths.append(discord_id)
+                        else:
+                            aegises_lost.append(adventurer)
+                elif self.active_boss.boss_type == 2: #type 2 bosses eat items
+                    surviving_gear_modifier = (100 - abs(damage_to_hero))/100
+                    adventurer.gear.gearscore = int(adventurer.gear.gearscore * surviving_gear_modifier)
+                    charutils.update_db_gear(adventurer.gear)
 
         boss_journal = " ".join([boss_journal, "During the battle,"])
         boss_journal = " ".join([boss_journal, self.active_boss.name])
         boss_journal = " ".join([boss_journal, "took a total of"])
         boss_journal = " ".join([boss_journal, str(boss_starting_hp - self.active_boss.current_hp)])
         boss_journal = " ".join([boss_journal, "damage."])
-        if deaths:
-            boss_journal = " ".join([boss_journal, "Unfortunately, that came at the cost of heroic sacrifice. "])
-            for hero in deaths:
-                if hero != deaths[0] and hero != deaths[-1]:
-                    boss_journal = "".join([boss_journal, ", "])
-                elif hero != deaths[0] and hero == deaths[-1]:
-                    boss_journal = " ".join([boss_journal, "and "])
-                boss_journal = "".join([boss_journal, hero.name])
-            boss_journal = " ".join([boss_journal, "fell in the battle and had to be reincarnated."])
-        if aegises_lost:
-            boss_journal = "".join([boss_journal, " "])
-            for hero in aegises_lost:
-                if hero != aegises_lost[0] and hero != aegises_lost[-1]:
-                    boss_journal = "".join([boss_journal, ", "])
-                elif hero != aegises_lost[0] and hero == aegises_lost[-1]:
-                    boss_journal = " ".join([boss_journal, "and "])
-                boss_journal = "".join([boss_journal, hero.name])
-            boss_journal = " ".join([boss_journal, "would have died, but survived thanks to the Aegis of Immortality."])
+        if self.active_boss.boss_type == 1:
+            if deaths:
+                boss_journal = " ".join([boss_journal, "Unfortunately, that came at the cost of heroic sacrifice. "])
+                for hero in deaths:
+                    if hero != deaths[0] and hero != deaths[-1]:
+                        boss_journal = "".join([boss_journal, ", "])
+                    elif hero != deaths[0] and hero == deaths[-1]:
+                        boss_journal = " ".join([boss_journal, "and "])
+                    boss_journal = "".join([boss_journal, hero.name])
+                boss_journal = " ".join([boss_journal, "fell in the battle and had to be reincarnated."])
+            if aegises_lost:
+                boss_journal = "".join([boss_journal, " "])
+                for hero in aegises_lost:
+                    if hero != aegises_lost[0] and hero != aegises_lost[-1]:
+                        boss_journal = "".join([boss_journal, ", "])
+                    elif hero != aegises_lost[0] and hero == aegises_lost[-1]:
+                        boss_journal = " ".join([boss_journal, "and "])
+                    boss_journal = "".join([boss_journal, hero.name])
+                boss_journal = " ".join([boss_journal, "would have died, but survived thanks to the Aegis of Immortality."])
+        elif self.active_boss.boss_type == 2:
+            boss_journal = " ".join([boss_journal, "Unfortunately, that came at the cost of material sacrifice."])
+            boss_journal = " ".join([boss_journal, "All heroes who failed to hold their own lost a percentage of their gearscore equal to the scale of their failure."])
         if killer:
             boss_journal = "\n".join([boss_journal, killer.name])
             boss_journal = " ".join([boss_journal, random.choice(RAID_OUTCOMES)])
