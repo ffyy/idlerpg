@@ -630,7 +630,7 @@ class DungeonMaster:
         return event_outcomes
 
     def run_group_pvp(self, fighters: list[Character]=None, description: str=None) -> EventOutcomes:
-        """Runs a group fight in which the highest level character defends against 2-4 lower level characters. If the defender wins, they gain XP.
+        """Runs a group fight in which the highest level character defends against 3 lower level characters. If the defender wins, they gain XP.
         If the defender loses, they lose XP. The fight is handled like several duels against the defender ongoing at once.
         In these fights, Characters may lose hp and die as in regular PvP.
 
@@ -650,7 +650,7 @@ class DungeonMaster:
             all_characters = charutils.get_all_characters()
             defender = max(all_characters, key=lambda character: character.level)
             all_characters.remove(defender)
-            attackers_count = random.randint(2,4)
+            attackers_count = 3
             attackers = random.sample(all_characters, attackers_count)
 
             pvp_journal = "**One against many!**\n" + defender.name + " was attacked by "
@@ -668,7 +668,8 @@ class DungeonMaster:
         attacker_bonuses = []
         defender_statistics = charutils.get_character_statistics(defender)
         defender_statistics.defences_attempted += 1
-        for attacker in attackers:
+        attacker_wins = 0
+        for i,attacker in enumerate(attackers):
             defender_temp_bonus = 0
             attacker_temp_bonus = 0
             if defender.character_class.id_ == 6: #clerics will buff themselves before fighting
@@ -682,35 +683,24 @@ class DungeonMaster:
             current_attacker_statistics = charutils.get_character_statistics(attacker)
             current_attacker_statistics.ganks_attempted += 1
             charutils.update_character_statistics(current_attacker_statistics)
+            if attacker_rolls[i] >= defender_rolls[i]:
+                attacker_wins += 1
+            if attacker_rolls[i]-defender_rolls[i] > attacker_rolls[0]-defender_rolls[0]:
+                carry_index = i
 
         xp_reward = int(5000*(sum(defender_rolls)/(sum(attacker_rolls))))
         carry_index = 0
 
-        if sum(defender_rolls) >= sum(attacker_rolls): #intro text in journal depending on who won
-            defender_statistics.defences_won += 1
-            pvp_journal = "".join([pvp_journal, defender.name])
-            pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "2"])[2:]]) #
-            pvp_journal = "".join([pvp_journal, "!"])
-        else:
-            for i,attacker in enumerate(attackers):
-                current_attacker_statistics = charutils.get_character_statistics(attacker)
-                current_attacker_statistics.ganks_won += 1
-                charutils.update_character_statistics(current_attacker_statistics)
-                if attacker_rolls[i]-defender_rolls[i] > attacker_rolls[0]-defender_rolls[0]:
-                    carry_index = i
-            pvp_journal = "".join([pvp_journal, attackers[carry_index].name])
-            pvp_journal = "".join([pvp_journal, random.choice([line for line in PVP_OUTCOMES if line[0] == "2"])[2:]])
-            pvp_journal = "".join([pvp_journal, "!"])
         #handle hp losses during the fights
         defender_hp_loss = 0
         for i, attacker in enumerate(attackers): #each attacker has a separate duel with the defender
             hp_loss = abs(defender_rolls[i] - attacker_rolls[i])
             if defender_rolls[i] > attacker_rolls[i]:
                 attacker.current_hp -= hp_loss
-                pvp_journal = " ".join([pvp_journal, attacker.name])
+                pvp_journal = "".join([pvp_journal, attacker.name])
                 pvp_journal = " ".join([pvp_journal, "lost"])
                 pvp_journal = " ".join([pvp_journal, str(hp_loss)])
-                pvp_journal = " ".join([pvp_journal, "HP."])
+                pvp_journal = " ".join([pvp_journal, "HP. "])
                 #handle possible death
                 if attacker.current_hp > 0:
                     charutils.update_db_character(charutils.character_to_db_character(attacker))
@@ -718,13 +708,13 @@ class DungeonMaster:
                     discord_id = charutils.get_discord_id_by_character(attacker)
                     permanent_death = attacker.die(defender.id_)
                     if permanent_death:
-                        pvp_journal = " ".join([pvp_journal, attacker.name])
-                        pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0!"])
+                        pvp_journal = "".join([pvp_journal, attacker.name])
+                        pvp_journal = " ".join([pvp_journal, "died and was reincarnated at level 0! "])
                         event_outcomes.deaths.append(discord_id)
                         defender_statistics.pks += 1
                     else:
-                        pvp_journal = " ".join([pvp_journal, attacker.name])
-                        pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality!"])
+                        pvp_journal = "".join([pvp_journal, attacker.name])
+                        pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality! "])
             else:
                 defender_hp_loss += hp_loss
         if defender_hp_loss > 0:
@@ -748,8 +738,10 @@ class DungeonMaster:
                     pvp_journal = " ".join([pvp_journal, defender.name])
                     pvp_journal = " ".join([pvp_journal, "would have died but was saved by the Aegis of Immortality!"])
 
-
-        if sum(defender_rolls) >= sum(attacker_rolls):
+        if not attacker_wins > len(attackers)/2 and defender.current_hp > 0:
+            defender_statistics.defences_won += 1
+            pvp_journal = "\n".join([pvp_journal, defender.name])
+            pvp_journal = " ".join([pvp_journal, "managed to fight off the attackers and gained some experience."])
             defender.current_xp += xp_reward
             charutils.update_db_character(charutils.character_to_db_character(defender))
             pvp_journal = "\n".join([pvp_journal, "XP reward for"])
@@ -759,6 +751,13 @@ class DungeonMaster:
             pvp_journal = "/".join([pvp_journal, str(sum(attacker_rolls))])
             pvp_journal = " - ".join([pvp_journal, "**Success!**"])
         else:
+            pvp_journal = "\n".join([pvp_journal, "The attackers managed to overwhelm"])
+            pvp_journal = " ".join([pvp_journal, defender.name])
+            pvp_journal = ",".join([pvp_journal, " which slowed down their progression a bit."])
+            for i,attacker in enumerate(attackers):
+                current_attacker_statistics = charutils.get_character_statistics(attacker)
+                current_attacker_statistics.ganks_won += 1
+                charutils.update_character_statistics(current_attacker_statistics)
             if xp_reward >= defender.current_xp:
                 xp_reward = defender.current_xp
             defender.current_xp = max(defender.current_xp-xp_reward, 0)
