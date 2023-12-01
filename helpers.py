@@ -80,17 +80,16 @@ def make_hp_bar(current_hp, max_hp, width=10) -> str:
     return hp_bar
 
 def make_boss_hp_bar(name, current_hp, max_hp, width=50, target_number=None) -> str:
-    boss_string = "".join([" "*((width+1-len(name))//2), name])
+    boss_string = "".join([" "*((width-len(name))//2+1), name])
     hp_bar = make_hp_bar(current_hp, max_hp, width)
     boss_hp_bar = "```\n"
     boss_hp_bar = "".join([boss_hp_bar, boss_string])
     boss_hp_bar = "\n".join([boss_hp_bar, hp_bar])
     if target_number:
         target_number_string_length = len("Target number: " + str(target_number))
-        boss_hp_bar = "\n".join([boss_hp_bar, " "*((width+1-target_number_string_length)//2)])
+        boss_hp_bar = "\n".join([boss_hp_bar, " "*((width-target_number_string_length)//2+1)])
         boss_hp_bar = "".join([boss_hp_bar, "Target number:"])
         boss_hp_bar = " ".join([boss_hp_bar, str(target_number)])
-        print(boss_string)
     boss_hp_bar = "".join([boss_hp_bar, "```"])
     return boss_hp_bar
 
