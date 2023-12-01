@@ -70,7 +70,6 @@ def update_character_statistics(stats: CharacterStatistics):
 def register_character(name, class_id, player_id, parent_id=None) -> Character:
     character_class = get_class(class_id)
     character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None, 0, parent_id)
-    print(str(character.parent_id))
 
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
