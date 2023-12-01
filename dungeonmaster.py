@@ -376,6 +376,7 @@ class DungeonMaster:
                         killer.aegis = 1
                         charutils.update_db_character(killer)
                         charutils.update_db_gear(killer.gear)
+                        self.active_boss.current_hp = 0
                         break
             else:
                 ratio = self.active_boss.calculate_damage_ratio(adventurer)
