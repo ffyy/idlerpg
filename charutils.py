@@ -67,9 +67,10 @@ def update_character_statistics(stats: CharacterStatistics):
     db.commit()
     cur.close
 
-def register_character(name, class_id, player_id) -> Character:
+def register_character(name, class_id, player_id, parent_id=None) -> Character:
     character_class = get_class(class_id)
-    character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None, 0)
+    character = CharacterDB(None, name, 0, character_class.bonus, 0, 0, class_id, None, 0, parent_id)
+    print(str(character.parent_id))
 
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
@@ -79,8 +80,9 @@ def register_character(name, class_id, player_id) -> Character:
         else:
             cur.execute("INSERT INTO gear(gearscore,unattuned) VALUES (0,0)")
         character.gear_id = cur.lastrowid
-        cur.execute("INSERT INTO character(name,level,bonus,current_xp,current_hp,class_id,gear_id,aegis) VALUES (?,?,?,?,?,?,?,?)", (character.name, character.level, character.bonus, character.current_xp, character_class.max_hp, character.class_id, character.gear_id, character.aegis))
+        cur.execute("INSERT INTO character(name,level,bonus,current_xp,current_hp,class_id,gear_id,aegis,parent_id) VALUES (?,?,?,?,?,?,?,?,?)", (character.name, character.level, character.bonus, character.current_xp, character_class.max_hp, character.class_id, character.gear_id, character.aegis, character.parent_id))
         character.id_ = cur.lastrowid
+        #if character.parent_id: cur.execute("UPDATE character SET parent_id = ? WHERE id_ = ?", character.parent_id, character.id_)
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
         cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, pks, personal_quests, create_timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)", (character.id_, 0, 0, 0, 0, 0, 0, 0, 0, int(time.time())))
         db.commit()
@@ -112,7 +114,7 @@ def delete_character(character: Character, reason):
     cur = db.cursor()
     player_id = get_discord_id_by_character(character)
     cur.execute("UPDATE statistics SET delete_timestamp = ? WHERE character_id = ?", (int(time.time()), character.id_))
-    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id,reason) VALUES (?,?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id, reason))
+    cur.execute("INSERT INTO deleted_character(id_,name,level,current_xp,current_hp,class_id,gear_id,player_id,reason,parent_id) VALUES (?,?,?,?,?,?,?,?,?,?)", (character.id_, character.name, character.level, character.current_xp, "0", character.character_class.id_, character.gear.id_, player_id, reason, character.parent_id))
     cur.execute("DELETE FROM character WHERE id_ = ?",(character.id_,))
     cur.execute("DELETE FROM player WHERE discord_id = ?", (player_id,))
     db.commit()
@@ -121,7 +123,7 @@ def delete_character(character: Character, reason):
 def reincarnate(character: Character, reason) -> Character:
     player_id = get_discord_id_by_character(character)
     delete_character(character, reason)
-    new_character = register_character(character.name, character.character_class.id_, player_id)
+    new_character = register_character(character.name, character.character_class.id_, player_id, character.id_)
     return new_character
 
 def register_player(player_id, character_id):
@@ -140,7 +142,7 @@ def get_character_by_name(name) -> Character:
     if db_character is None:
         return None
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8], db_character[9])
         character = db_character_to_character(data_character)
         return character
 
@@ -154,11 +156,14 @@ def get_character_by_id(id_):
         db_character = cur.fetchone()
         if db_character is None:
             return None
-        dead_character = DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7])
+        gearscore = get_gear(db_character[6]).gearscore
+        stats = get_character_statistics_by_id(db_character[0])
+        time_alive = stats.delete_timestamp - stats.create_timestamp
+        dead_character = DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[5], gearscore, db_character[7], time_alive, db_character[8], db_character[9])
         cur.close()
         return dead_character
     else:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8], db_character[9])
         character = db_character_to_character(data_character)
         cur.close()
         return character
@@ -185,7 +190,7 @@ def get_character_by_player_id(player_id) -> Character:
         db_character = cur.fetchone()
     cur.close()
     if db_character is not None:
-        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8])
+        data_character = CharacterDB(db_character[0], db_character[1], db_character[2], db_character[3], db_character[4], db_character[5], db_character[6], db_character[7], db_character[8], db_character[9])
         character = db_character_to_character(data_character)
         return character
     else:
@@ -232,7 +237,7 @@ def get_all_dead_characters() -> list[DeadCharacter]:
         gearscore = get_gear(db_character[6]).gearscore
         stats = get_character_statistics_by_id(db_character[0])
         time_alive = stats.delete_timestamp - stats.create_timestamp
-        dead_characters.append(DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[5], gearscore, db_character[7], time_alive, db_character[8]))
+        dead_characters.append(DeadCharacter(db_character[0], db_character[1], db_character[2], db_character[5], gearscore, db_character[7], time_alive, db_character[8], db_character[9]))
 
     dead_characters.sort(key=lambda dead_character: -dead_character.life_length)
 
@@ -277,13 +282,13 @@ def get_gear(id) -> Gear:
         return None
 
 def character_to_db_character(character: Character) -> CharacterDB:
-    db_character = CharacterDB(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_, character.aegis)
+    db_character = CharacterDB(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, character.character_class.id_, character.gear.id_, character.aegis, character.parent_id)
     return db_character
 
 def db_character_to_character(character: CharacterDB) -> Character:
     game_class = get_class(character.class_id)
     game_gear = get_gear(character.gear_id)
-    game_character = Character(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, game_class, game_gear, character.aegis)
+    game_character = Character(character.id_, character.name, character.level, character.bonus, character.current_xp, character.current_hp, game_class, game_gear, character.aegis, character.parent_id)
     return game_character
 
 def is_name_valid(name) -> bool:
@@ -302,6 +307,20 @@ def get_top10() -> str:
     cur = db.cursor()
     cur.execute("SELECT name, level FROM character ORDER BY level DESC LIMIT 10")
     return(str(cur.fetchall()))
+
+def get_parent(current_character: Character):
+    parent = get_character_by_id(current_character.parent_id)
+    return parent
+
+def get_generation(character: Character) -> int:
+    if character.parent_id:
+        gen = 1
+        while character.parent_id:
+            character = get_character_by_id(character.parent_id)
+            gen += 1
+        return gen
+    else:
+        return 1
 
 #GAME OCCURRENCES
 
@@ -330,7 +349,8 @@ def get_leaderboard(top_x, users_list, class_filter) -> str:
         for character in top_characters:
             character_statistics = get_character_statistics(character)
             time_alive = (int(time.time()) - character_statistics.create_timestamp)/60/60
-            leaderboard_lists[0].append(character.name)
+            name_with_gen = character.name + " " + int_to_roman(get_generation(character))
+            leaderboard_lists[0].append(name_with_gen)
             leaderboard_lists[1].append(str(character.level))
             leaderboard_lists[2].append(character.character_class.name)
             leaderboard_lists[3].append(str(character.gear.gearscore))
@@ -375,7 +395,8 @@ def get_graveyard(name, users_list, class_filter) -> str:
         for character in top_characters:
             stats = get_character_statistics_by_id(character.id_)
             time_alive = int(character.life_length)/3600
-            leaderboard_lists[0].append(character.name)
+            name_with_gen = character.name + " " + int_to_roman(get_generation(character))
+            leaderboard_lists[0].append(name_with_gen)
             leaderboard_lists[1].append(str(character.level))
             leaderboard_lists[2].append(get_class(character.class_id).name)
             leaderboard_lists[3].append(str(character.gearscore))
@@ -420,7 +441,8 @@ def character_search(name, users_list) -> str:
     results_lists.append(["XP"])
     results_lists.append(["HP"])
     results_lists.append(["Player"])
-    results_lists[0].append(character.name)
+    name_with_gen = character.name + " " + int_to_roman(get_generation(character))
+    results_lists[0].append(name_with_gen)
     results_lists[1].append(str(character.level))
     results_lists[2].append(character.character_class.name)
     results_lists[3].append(str(character.gear.gearscore))
@@ -453,3 +475,56 @@ def character_search(name, users_list) -> str:
     results = find_results + stats_results
 
     return results
+
+def parent_search(player_id):
+    current_character = get_character_by_player_id(player_id)
+    if not current_character:
+        return None
+    parent = get_parent(current_character)
+
+    if parent:
+        results_lists = []
+        results_lists.append(["Name"])
+        results_lists.append(["L"])
+        results_lists.append(["Class"])
+        results_lists.append(["GS"])
+        results_lists.append(["Cause of death"])
+        name_with_gen = parent.name + " " + int_to_roman(get_generation(parent))
+        results_lists[0].append(name_with_gen)
+        results_lists[1].append(str(parent.level))
+        results_lists[2].append(get_class(parent.class_id).name)
+        results_lists[3].append(str(parent.gearscore))
+        if parent.death_reason == -2:
+                results_lists[4].append("Stopped existing")
+        elif parent.death_reason == -1:
+                results_lists[4].append("Natural causes")
+        elif parent.death_reason == -3:
+                results_lists[4].append("World boss")
+        else:
+            killer_name = get_character_by_id(parent.death_reason).name
+            results_lists[4].append(killer_name)
+
+        find_results = make_table(results_lists)
+
+        stats = get_character_statistics(parent)
+
+        statistics_lists = []
+        statistics_lists.append(["Quests"])
+        statistics_lists.append(["Ganks"])
+        statistics_lists.append(["Defences"])
+        statistics_lists.append(["Kills"])
+        statistics_lists.append(["PQ"])
+        statistics_lists.append(["Created"])
+        statistics_lists[0].append(str(stats.quests_won) + "/" + str(stats.quests_attempted))
+        statistics_lists[1].append(str(stats.ganks_won) + "/" + str(stats.ganks_attempted))
+        statistics_lists[2].append(str(stats.defences_won) + "/" + str(stats.defences_attempted))
+        statistics_lists[3].append(str(stats.pks))
+        statistics_lists[4].append(str(stats.personal_quests))
+        statistics_lists[5].append(str(datetime.datetime.fromtimestamp(stats.create_timestamp)))
+
+        stats_results = make_table(statistics_lists)
+
+        results = find_results + stats_results
+        return results
+    else:
+        return None

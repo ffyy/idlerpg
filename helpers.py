@@ -93,16 +93,10 @@ def make_boss_hp_bar(name, current_hp, max_hp, width=50, target_number=None) -> 
     boss_hp_bar = "".join([boss_hp_bar, "```"])
     return boss_hp_bar
 
-def debug_print(var):
-    printstring = "------"
-    printstring = "\n".join([printstring,"the type is"])
-    printstring = " ".join([printstring, str(type(var))])
-    printstring = "\n".join([printstring, "the string representation is"])
-    printstring = " ".join([printstring, str(var)])
-    try:
-        printstring = "\n".join([printstring, "the vars are"])
-        printstring = " ".join([printstring, vars(var)])
-    except:
-        pass
-    printstring = "\n".join([printstring, "------"])
-    print(printstring)
+def int_to_roman(number):
+    roman = ""
+    for value, letter in [(1000, 'M'), (900, 'CM'), (500, 'D'), (400, 'CD'), (100, 'C'), (90, 'XC'), (50, 'L'), (40, 'XL'), (10, 'X'), (9, 'IX'), (5, 'V'), (4, 'IV'), (1, 'I')]:
+        while number >= value:
+            roman = "".join([roman, letter])
+            number -= value
+    return roman

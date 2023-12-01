@@ -241,6 +241,16 @@ async def find(interaction: discord.Interaction, name: typing.Optional[str]):
 
     await interaction.response.send_message(content=title_text + results_report)
 
+@client.tree.command(name="dad", description="Find the previous incarnation of your current character.")
+async def dad(interaction: discord.Interaction):
+    current_character = charutils.get_character_by_player_id(interaction.user.id)
+    if current_character:
+        title_text = "The previous incarnation of your currect character:"
+        results_report = charutils.parent_search(interaction.user.id)
+        if results_report: await interaction.response.send_message(content=title_text + results_report)
+        else: await interaction.response.send_message(content="Your character hasn't been reincarnated yet.")
+    else: await interaction.response.send_message(content="You don't currently have a character. Use /register to start!", ephemeral=True)
+
 @client.tree.command(name="changename", description="Rename your character")
 async def changename(interaction: discord.Interaction, new_name: str):
     character = charutils.get_character_by_player_id(interaction.user.id)

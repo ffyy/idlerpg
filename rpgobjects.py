@@ -43,7 +43,8 @@ class CharacterDB:
             current_hp,
             class_id,
             gear_id,
-            aegis
+            aegis,
+            parent_id
             ):
         self.id_ = id_
         self.name = name
@@ -54,6 +55,7 @@ class CharacterDB:
         self.class_id = class_id
         self.gear_id = gear_id
         self.aegis = aegis
+        self.parent_id = parent_id
 
 class Character:
     def __init__(
@@ -66,7 +68,8 @@ class Character:
             current_hp,
             character_class: CharacterClass,
             gear: Gear,
-            aegis
+            aegis,
+            parent_id
             ):
         self.id_ = id_
         self.name = name
@@ -77,6 +80,7 @@ class Character:
         self.character_class = character_class
         self.gear = gear
         self.aegis = aegis
+        self.parent_id = parent_id
 
     def die(self, reason=-1) -> bool:
         if self.aegis == 1:
@@ -187,7 +191,7 @@ class Character:
         return xp
 
     def take_long_rest(self):
-        rested_character = Character(self.id_, self.name, self.level, self.bonus, self.current_xp, self.current_hp, self.character_class, self.gear, self.aegis)
+        rested_character = Character(self.id_, self.name, self.level, self.bonus, self.current_xp, self.current_hp, self.character_class, self.gear, self.aegis, self.parent_id)
         while rested_character.current_xp >= self.character_class.xp_per_level:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
@@ -220,7 +224,8 @@ class DeadCharacter:
             gearscore,
             player_id,
             life_length,
-            death_reason
+            death_reason,
+            parent_id
     ):
         self.id_ = id_
         self.name = name
@@ -230,6 +235,7 @@ class DeadCharacter:
         self.player_id = player_id
         self.life_length = life_length
         self.death_reason = death_reason
+        self.parent_id = parent_id
 
 class Quest:
     def __init__(

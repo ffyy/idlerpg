@@ -81,7 +81,6 @@ class DungeonMaster:
 
         chosen_event = random.choice(self.monthly_events_list)
         self.monthly_events_list.remove(chosen_event)
-        print(str(self.monthly_events_list))
 
         match chosen_event:
             case 0:
@@ -924,7 +923,7 @@ class DungeonMaster:
 
         old_characters.sort(key=lambda character: (-character.level, -character.gear.gearscore, -character.current_xp))
         for old_character in old_characters:
-            resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.bonus, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear, old_character.aegis)
+            resting_character = Character(old_character.id_, old_character.name, old_character.level, old_character.bonus, old_character.current_xp, old_character.current_hp, old_character.character_class, old_character.gear, old_character.aegis, old_character.parent_id)
             resting_character.current_xp += resting_character.roll_for_passive_xp()
             rested_characters.append(resting_character.take_long_rest())
 
