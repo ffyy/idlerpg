@@ -320,6 +320,7 @@ class DungeonMaster:
 
         event_outcomes = EventOutcomes([],[])
         party = charutils.get_all_characters()
+        party_max_level = max(party, key=lambda character: character.level).level
         random.shuffle(party)
         boss_difficulty = random.randint(QUEST_MINIMUM_DIFFICULTY,100)
         xp_reward = 10000
@@ -330,7 +331,17 @@ class DungeonMaster:
         boss_journal = "".join([boss_journal, "!"])
         boss_journal = " ".join([boss_journal, "This is a level"])
         boss_journal = " ".join([boss_journal, str(self.active_boss.target_level)])
-        boss_journal = " ".join([boss_journal, "encounter. This time the target number to hold your own in the fight was"])
+        boss_journal = " ".join([boss_journal, "encounter."])
+        if self.active_boss.target_level > party_max_level + 15:
+            boss_journal = "\n".join([boss_journal, "Upon seeing this target level, they decided that the boss is too difficult for them."])
+            boss_journal = " ".join([boss_journal, "They instead took the opportunity to do some additional quests to weaken the boss, reducing the target level to"])
+            boss_journal = " ".join([boss_journal, str(party_max_level + 15)])
+            boss_journal = "".join([boss_journal, "."])
+            self.active_boss.target_level = party_max_level + 15
+            self.update_current_boss()
+            event_outcomes.outcome_messages.append(boss_journal)
+            return event_outcomes
+        boss_journal = " ".join([boss_journal, "This time the target number to hold your own in the fight was"])
         boss_journal = " ".join([boss_journal, str(boss_difficulty)])
         boss_journal = "".join([boss_journal, "."])
 
@@ -387,6 +398,7 @@ class DungeonMaster:
                     surviving_gear_modifier = (100 - abs(damage_to_hero))/100
                     adventurer.gear.gearscore = int(adventurer.gear.gearscore * surviving_gear_modifier)
                     charutils.update_db_gear(adventurer.gear)
+                    deaths.append(adventurer) #they dont actually die, but this makes it easy to check if anyone lost gearscore
 
         boss_journal = " ".join([boss_journal, "During the battle,"])
         boss_journal = " ".join([boss_journal, self.active_boss.name])
@@ -412,7 +424,7 @@ class DungeonMaster:
                         boss_journal = " ".join([boss_journal, "and "])
                     boss_journal = "".join([boss_journal, hero.name])
                 boss_journal = " ".join([boss_journal, "would have died, but survived thanks to the Aegis of Immortality."])
-        elif self.active_boss.boss_type == 2:
+        elif self.active_boss.boss_type == 2 and deaths:
             boss_journal = " ".join([boss_journal, "Unfortunately, that came at the cost of material sacrifice."])
             boss_journal = " ".join([boss_journal, "All heroes who failed to hold their own lost a percentage of their gearscore equal to the scale of their failure."])
         if killer:
@@ -436,7 +448,7 @@ class DungeonMaster:
             boss_journal = " ".join([boss_journal, "survived the epic raid and will continue terrorizing the world!"])
             boss_journal = "\n".join([boss_journal, "**Failure!**"])
 
-        boss_table = make_boss_hp_bar(self.active_boss.name, self.active_boss.current_hp, self.active_boss.max_hp)
+        boss_table = make_boss_hp_bar(self.active_boss.name, self.active_boss.current_hp, self.active_boss.max_hp, target_number=boss_difficulty)
 
         hero_strings = []
         hero_strings.append(["Hero"])
