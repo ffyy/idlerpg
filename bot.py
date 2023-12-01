@@ -218,7 +218,7 @@ async def register(interaction: discord.Interaction, name: str):
         await interaction.response.send_message(response, ephemeral=True)
     else:
         if (charutils.is_name_valid(name)):
-            await interaction.response.send_message("You need to pick a class also!", view=RegisterView(name), ephemeral=True)
+            await interaction.response.send_message("You need to pick a class also. Make sure to scroll the list to see more classes!", view=RegisterView(name), ephemeral=True)
         else:
             await interaction.response.send_message("The name [" + name + "] is not valid.\nNames can be up to 12 characters, must be unique, must include only letters and no uppercase special characters.", ephemeral=True)
 
@@ -278,7 +278,8 @@ class RulesView(discord.ui.View):
         discord.SelectOption(label="Questing", value="2", description="How are are quests run?"),
         discord.SelectOption(label="Gear", value="3", description="What does gear do?"),
         discord.SelectOption(label="PvP", value="4", description="How do characters fight each other?"),
-        discord.SelectOption(label="Classes", value="5", description="What do the different classes do?")
+        discord.SelectOption(label="Classes", value="5", description="What do the different classes do?"),
+        discord.SelectOption(label="Raid bosses", value="6", description="How do we fight raid bosses?"),
     ]
 
     @discord.ui.select(placeholder="Rules section", options=rules_sections, max_values=1)
@@ -359,6 +360,18 @@ In the standard duel PvP encounter, characters roll off directly against each ot
                     class_strings[i] = "".join([class_strings[i], "\n"])
                 for string in class_strings:
                     response = "\n".join([response, string])
+            case "6":
+                response = """
+Once per in-game month (30 'days'), all characters in the world will get together and try to fight a raid boss. In this fight, the characters will attack the boss in a random order.\n
+If a character is higher level than the boss, they get a bonus to their roll equal to the difference between their level and the target level.\n
+Characters who beat the target number deal damage to the boss depending on how much they beat the target number by. Those who fail to beat the target roll will take damage or lose items depending on the type of the boss.\n
+If the character's level matches the boss target level, they take 100% of damage from the boss. If the level is less than half the target level, they take double damage. If the level is double the boss target level, they take half damage.\n
+The character who gets the killing blow on the boss receives a magic item as well as an Aegis of Immortality. Having an Aegis of Immortality means that the next time the character would die, they will instead heal to full hp.\n
+When a boss is defeated, all characters gain 10000 bonus experience.\n
+There are two types of bosses:
+- **The Dragonator** - Failing rolls against this boss hurts characters and characters can die while fighting the boss.
+- **The Rust Monster** - Failing rolls against this boss reduces the character's gearscore.
+"""
             case _:
                 response = "Tunnel snakes rule"
         response = "\n".join([response, "Select the next section to read:"])
