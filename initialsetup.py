@@ -16,7 +16,7 @@ def do():
     delete_all_tables(db)
 
     character_classes = [(1, "Thief", 1, 100, 0, 10000, 100, "Trust in your luck (1d100)"),
-                         (2, "Fighter", 5, 20, 0, 10000, 100, "Tanky and solid in any situation (5d20)"),
+                         (2, "Fighter", 5, 20, 0, 10000, 105, "Tanky and solid in any situation (5d20)"),
                          (3, "Hobbit", 5, 10, 0, 6000, 100, "Bad at everything, but starts with a magic ring (5d10)"),
                          (4, "Elf", 5, 20, 20, 17000, 100, "Just better at everything, but levels slowly (5d20+20)"),
                          (5, "Magic User", 1, 100, 10, 10000, 80, "Powerful but squishy (1d100+10)"),
