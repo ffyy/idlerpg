@@ -158,7 +158,11 @@ class DeleteView(discord.ui.View):
         deleted_character = charutils.delete_character_by_id(interaction.user.id)
         await interaction.response.edit_message(content=("You can always start again by using /register"), view=None)
         response = "**A hero has left the building!**"
-        clean_name = re.sub("[`>*]", "", interaction.user.nick)
+        if interaction.user.nick:
+            username = interaction.user.nick
+        else:
+            username = interaction.user.name
+        clean_name = re.sub("[`>*]", "", username)
         response = "\n".join([response, clean_name])
         response = " ".join([response, "decided it was time for"])
         response = " ".join([response, deleted_character.name])
@@ -203,8 +207,11 @@ class RegisterView(discord.ui.View):
         response = " ".join([response, created_character.character_class.name])
         response = " ".join([response, "entered the world!"])
         response = "\n".join([response, "this character belongs to"])
-        clean_name = re.sub("[`>*]", "", interaction.user.nick)
-        response = " ".join([response, clean_name])
+        if interaction.user.nick:
+            username = interaction.user.nick
+        else:
+            username = interaction.user.name
+        response = " ".join([response, username])
         response = "".join([response, "."])
         await interaction.channel.send(response)
 
