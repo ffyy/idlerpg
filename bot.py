@@ -39,9 +39,9 @@ class RpgEngine(discord.Client):
     async def on_ready(self):
         await self.tree.sync(guild=GUILD)
         print("commands synced")
-        sleep_time = 30
+        await sleep(60*DAY_LENGTH/4)
         self.run_daily_events.start()
-        await sleep(sleep_time)
+        await sleep(60*DAY_LENGTH/2)
         self.run_monthly_events.start()
         print(str(datetime.datetime.now()) + " - loops started")
 
@@ -148,6 +148,28 @@ async def graveyard(interaction: discord.Interaction, name: typing.Optional[str]
     else:
         await interaction.response.send_message(content="No dead characters matching the filters were found", ephemeral=True)
 
+class ReportView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=100)
+
+    report_columns = [
+        discord.SelectOption(label="Class", value="0", description="Show class"),
+        discord.SelectOption(label="Experience", value="1", description="Show XP"),
+        discord.SelectOption(label="Quests", value="2", description="Show quests statistics"),
+        discord.SelectOption(label="PvP", value="3", description="Show PvP statistics"),
+        discord.SelectOption(label="Time alive", value="4", description="Show time alive"),
+        discord.SelectOption(label="Time created", value="5", description="Show create date")
+    ]
+
+    @discord.ui.select(placeholder="Select report fields", options=report_columns, max_values=5)
+    async def reply_select(self, interaction: discord.Interaction, select: discord.ui.Select):
+        await interaction.response.defer()
+        print(select.values)
+        await interaction.followup.edit_message(interaction.message.id, content=(select.values), view=None)
+
+@client.tree.command(name="report",description="Report filter select test")
+async def report(interaction: discord.Interaction, name: typing.Optional[str]):
+    await interaction.response.send_message("Choose report fields", view=ReportView(), ephemeral=True)
 
 class DeleteView(discord.ui.View):
     def __init__(self, name):
@@ -417,6 +439,10 @@ async def create_graveyard_report(name, class_filter):
 
 async def send_event_messages(channel, event_outcomes):
     for message in event_outcomes.outcome_messages:
+        if len(message) >= 2000:
+            print("message was too long:" + str(len(message)))
+            message = message[:1997] + "```"
+            print(message)
         await channel.send(content=message)
     if event_outcomes.deaths:
         death_notice = ""
