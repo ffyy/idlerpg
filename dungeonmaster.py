@@ -583,7 +583,7 @@ class DungeonMaster:
             if pvp_characters[0].current_hp > 0:
                 charutils.update_db_character(charutils.character_to_db_character(pvp_characters[0]))
             elif pvp_characters[0].current_hp <= 0:
-                discord_id = charutils.get_discord_id_by_character(pvp_characters[1])
+                discord_id = charutils.get_discord_id_by_character(pvp_characters[0])
                 permanent_death = pvp_characters[0].die(pvp_characters[1].id_)
                 if permanent_death:
                     deaths.append(discord_id)
