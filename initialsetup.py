@@ -36,6 +36,7 @@ def do():
     cur.execute("CREATE TABLE IF NOT EXISTS player(id_ INTEGER NOT NULL PRIMARY KEY, discord_id TEXT UNIQUE NOT NULL, character_id INTEGER UNIQUE NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS statistics(character_id INTEGER NOT NULL, quests_attempted INTEGER NOT NULL, quests_won INTEGER NOT NULL, ganks_attempted INTEGER NOT NULL, ganks_won INTEGER NOT NULL, defences_attempted INTEGER NOT NULL, defences_won INTEGER NOT NULL, pks INTEGER NOT NULL, personal_quests INTEGER NOT NULL, create_timestamp INTEGER NOT NULL, delete_timestamp INTEGER)")
     cur.execute("CREATE TABLE IF NOT EXISTS raid_boss(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, current_hp INTEGER NOT NULL, max_hp INTEGER NOT NULL, boss_type INTEGER NOT NULL, target_level INTEGER NOT NULL)")
+    cur.execute("CREATE TABLE IF NOT EXISTS state(daily TEXT, monthly TEXT)")
     cur.executemany("INSERT INTO class VALUES (?, ?, ?, ?, ?, ?, ?, ?)", character_classes)
     cur.executemany("INSERT INTO raid_boss VALUES (?, ?, ?, ?, ?, ?)", raid_bosses)
     db.commit()

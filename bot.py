@@ -129,7 +129,26 @@ if DEBUG_MODE == "1":
         else:
             await interaction.response.send_message("You are not an admin", ephemeral=True)
 
+    @client.tree.command(name="restart",description="Restart the bot") #admin command
+    async def restart(interaction: discord.Interaction):
+        if interaction.user.id == ADMIN_ID:
+            DM.load_state()
+            await interaction.response.send_message("Check console")
+            #exit()
+        else:
+            await interaction.response.send_message("You are not an admin", ephemeral=True)
+
 #TREE COMMANDS
+
+@client.tree.command(name="shutdown",description="Shut down the bot") #admin command
+async def shutdown(interaction: discord.Interaction):
+    if interaction.user.id == ADMIN_ID:
+        if DM.shutdown(): await interaction.response.send_message("Shutting down")
+        else: await interaction.response.send_message("Something prevented a smooth shutdown")
+        await client.close()
+        quit()
+    else:
+        await interaction.response.send_message("You are not an admin", ephemeral=True)
 
 @client.tree.command(name="top",description="Get top X characters. Returns top 10 if no argument is given.")
 async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[int], class_filter: typing.Optional[str]):

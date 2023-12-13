@@ -30,8 +30,63 @@ class DungeonMaster:
         self.daily_events_list = []
         self.monthly_events_list = []
         self.active_boss = None
-        self.initialize_daily_events_list()
+        self.load_state()
         self.summon_new_boss()
+
+    def load_state(self):
+        daily_state_string = charutils.get_daily_state()
+        loaded_daily_events_list = []
+        if daily_state_string:
+            for char in daily_state_string:
+                loaded_daily_events_list.append(int(char))
+        print("events loaded from db: " + str(loaded_daily_events_list))
+        self.daily_events_list = loaded_daily_events_list
+
+        monthly_state_string = charutils.get_monthly_state()
+        loaded_monthly_events_list = []
+        if monthly_state_string:
+            split_monthly_state = monthly_state_string.split(".")
+            for char in split_monthly_state[0]:
+                loaded_monthly_events_list.append(int(char))
+            for i in range(int(split_monthly_state[1])):
+                loaded_monthly_events_list.append(0)
+        print("events loaded from db: " + str(loaded_monthly_events_list))
+        self.monthly_events_list = loaded_monthly_events_list
+
+    def generate_daily_state(self) -> str:
+        daily_state_string = ""
+        if 0 in self.daily_events_list:
+            daily_state_string = "".join([daily_state_string, "0"])
+        if 1 in self.daily_events_list:
+            daily_state_string = "".join([daily_state_string, "1"])
+        if 2 in self.daily_events_list:
+            daily_state_string = "".join([daily_state_string, "2"])
+        return daily_state_string
+
+    def generate_monthly_state(self) -> str:
+        monthly_state_string = ""
+        if 2 in self.monthly_events_list:
+            monthly_state_string = "".join([monthly_state_string, "2"])
+        if 1 in self.monthly_events_list:
+            monthly_state_string = "".join([monthly_state_string, "1"])
+        EVENT_TYPE_SEPARATOR = "."
+        num_zeroes = sum(number == 0 for number in self.monthly_events_list)
+        monthly_state_string = EVENT_TYPE_SEPARATOR.join([monthly_state_string, str(num_zeroes)])
+        return monthly_state_string
+
+    def update_states(self):
+        daily_state = self.generate_daily_state()
+        monthly_state = self.generate_monthly_state()
+        charutils.update_state(daily_state, monthly_state)
+
+    def shutdown(self) -> bool:
+        #would be nice if in case of problems saving state it was caught and a warning was returned instead
+        daily_state = self.generate_daily_state()
+        monthly_state = self.generate_monthly_state()
+        charutils.update_state(daily_state, monthly_state)
+        print("saved daily state: " + charutils.get_daily_state())
+        print("saved monthly state: " + charutils.get_monthly_state())
+        return True
 
     def is_pvp_allowed(self) -> bool:
         """Checks if there are enough characters in the world for random PvP events to trigger. Returns true in case there are at least 6 living characters.
@@ -49,10 +104,12 @@ class DungeonMaster:
         if not self.daily_events_list:
             print("out of events, running long rest")
             self.initialize_daily_events_list()
+            self.update_states()
             return self.run_long_rest()
 
         chosen_event = random.choice(self.daily_events_list)
         self.daily_events_list.remove(chosen_event)
+        self.update_states()
 
         match chosen_event:
             case 0:
@@ -81,6 +138,7 @@ class DungeonMaster:
 
         chosen_event = random.choice(self.monthly_events_list)
         self.monthly_events_list.remove(chosen_event)
+        self.update_states()
 
         match chosen_event:
             case 0:

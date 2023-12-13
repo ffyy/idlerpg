@@ -81,7 +81,6 @@ def register_character(name, class_id, player_id, parent_id=None) -> Character:
         character.gear_id = cur.lastrowid
         cur.execute("INSERT INTO character(name,level,bonus,current_xp,current_hp,class_id,gear_id,aegis,parent_id) VALUES (?,?,?,?,?,?,?,?,?)", (character.name, character.level, character.bonus, character.current_xp, character_class.max_hp, character.class_id, character.gear_id, character.aegis, character.parent_id))
         character.id_ = cur.lastrowid
-        #if character.parent_id: cur.execute("UPDATE character SET parent_id = ? WHERE id_ = ?", character.parent_id, character.id_)
         cur.execute("INSERT INTO player(discord_id, character_id) VALUES (?,?)", (player_id, character.id_))
         cur.execute("INSERT INTO statistics(character_id, quests_attempted, quests_won, ganks_attempted, ganks_won, defences_attempted, defences_won, pks, personal_quests, create_timestamp) VALUES (?,?,?,?,?,?,?,?,?,?)", (character.id_, 0, 0, 0, 0, 0, 0, 0, 0, int(time.time())))
         db.commit()
@@ -320,6 +319,29 @@ def get_generation(character: Character) -> int:
         return gen
     else:
         return 1
+
+def update_state(daily, monthly):
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("UPDATE state SET daily = ?, monthly = ?", (daily, monthly))
+    if not cur.rowcount > 0:
+        cur.execute("INSERT INTO state(daily, monthly) VALUES (?, ?)", (daily, monthly))
+    db.commit()
+    cur.close
+
+def get_daily_state() -> str:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT daily FROM state")
+    daily_state = str(cur.fetchone()[0])
+    return daily_state
+
+def get_monthly_state() -> str:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT monthly FROM state")
+    daily_state = str(cur.fetchone()[0])
+    return daily_state
 
 #GAME OCCURRENCES
 
