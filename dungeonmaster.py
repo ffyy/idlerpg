@@ -817,9 +817,7 @@ class DungeonMaster:
             pvp_journal = "\n".join([pvp_journal, "XP reward for"])
             pvp_journal = " ".join([pvp_journal, defender.name])
             pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
-            pvp_journal = "\n".join([pvp_journal, str(sum(defender_rolls))])
-            pvp_journal = "/".join([pvp_journal, str(sum(attacker_rolls))])
-            pvp_journal = " - ".join([pvp_journal, "**Success!**"])
+            pvp_journal = "\n".join([pvp_journal, "**Success!**"])
         else:
             pvp_journal = "\n".join([pvp_journal, "The attackers managed to overwhelm"])
             pvp_journal = " ".join([pvp_journal, defender.name])
@@ -835,9 +833,7 @@ class DungeonMaster:
             pvp_journal = "\n".join([pvp_journal, "XP loss for"])
             pvp_journal = " ".join([pvp_journal, defender.name])
             pvp_journal = ": ".join([pvp_journal, str(xp_reward)])
-            pvp_journal = "\n".join([pvp_journal, str(sum(defender_rolls))])
-            pvp_journal = "/".join([pvp_journal, str(sum(attacker_rolls))])
-            pvp_journal = " - ".join([pvp_journal, "**Failure!**"])
+            pvp_journal = "\n".join([pvp_journal, "**Failure!**"])
 
         charutils.update_character_statistics(defender_statistics)
 
