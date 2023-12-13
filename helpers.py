@@ -56,7 +56,7 @@ def make_table(input) -> str:
 
     return(table)
 
-def make_hp_bar(current_hp, max_hp, width=10) -> str:
+def make_hp_bar(current_hp, max_hp, width=10, bookends="[]") -> str:
     hp_ratio = current_hp / max_hp * width
     filled_squares = int(hp_ratio)
 
@@ -64,7 +64,7 @@ def make_hp_bar(current_hp, max_hp, width=10) -> str:
     EMPTY_SYMBOL = "□"
     PARTIAL_SYMBOL = "□"
 
-    hp_bar = "["
+    hp_bar = bookends[0]
     for i in range(filled_squares):
         hp_bar= "".join([hp_bar, FILLED_SYMBOL])
 
@@ -75,7 +75,7 @@ def make_hp_bar(current_hp, max_hp, width=10) -> str:
     for i in range(width-filled_squares):
         hp_bar= "".join([hp_bar, EMPTY_SYMBOL])
 
-    hp_bar= "".join([hp_bar, "]"])
+    hp_bar= "".join([hp_bar, bookends[1]])
 
     return hp_bar
 

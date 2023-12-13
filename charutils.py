@@ -459,7 +459,10 @@ def character_search(name, users_list) -> str:
     if character is None:
         return "Character not found"
 
-    hp_bar = make_hp_bar(character.current_hp, character.character_class.max_hp)
+    if character.aegis > 0:
+        hp_bar = make_hp_bar(character.current_hp, character.character_class.max_hp, bookends="{}")
+    else:
+        hp_bar = make_hp_bar(character.current_hp, character.character_class.max_hp)
 
     results_lists = []
     results_lists.append(["Name"])
