@@ -345,6 +345,13 @@ def get_monthly_state() -> str:
 
 #GAME OCCURRENCES
 
+def generate_name_with_generation(character: Character) -> str:
+    gen = get_generation(character)
+    if gen == 1:
+        return character.name
+    else:
+        return character.name + " " + int_to_roman(gen)
+
 def get_leaderboard(top_x, users_list, class_filter) -> str:
     characters = get_all_characters()
     if class_filter:
@@ -370,7 +377,7 @@ def get_leaderboard(top_x, users_list, class_filter) -> str:
         for character in top_characters:
             character_statistics = get_character_statistics(character)
             time_alive = (int(time.time()) - character_statistics.create_timestamp)/60/60
-            name_with_gen = character.name + " " + int_to_roman(get_generation(character))
+            name_with_gen = generate_name_with_generation(character)
             leaderboard_lists[0].append(name_with_gen)
             leaderboard_lists[1].append(str(character.level))
             leaderboard_lists[2].append(character.character_class.name)
@@ -416,7 +423,7 @@ def get_graveyard(name, users_list, class_filter) -> str:
         for character in top_characters:
             stats = get_character_statistics_by_id(character.id_)
             time_alive = int(character.life_length)/3600
-            name_with_gen = character.name + " " + int_to_roman(get_generation(character))
+            name_with_gen = generate_name_with_generation(character)
             leaderboard_lists[0].append(name_with_gen)
             leaderboard_lists[1].append(str(character.level))
             leaderboard_lists[2].append(get_class(character.class_id).name)
@@ -462,7 +469,7 @@ def character_search(name, users_list) -> str:
     results_lists.append(["XP"])
     results_lists.append(["HP"])
     results_lists.append(["Player"])
-    name_with_gen = character.name + " " + int_to_roman(get_generation(character))
+    name_with_gen = generate_name_with_generation(character)
     results_lists[0].append(name_with_gen)
     results_lists[1].append(str(character.level))
     results_lists[2].append(character.character_class.name)
@@ -510,7 +517,7 @@ def parent_search(player_id):
         results_lists.append(["Class"])
         results_lists.append(["GS"])
         results_lists.append(["Cause of death"])
-        name_with_gen = parent.name + " " + int_to_roman(get_generation(parent))
+        name_with_gen = generate_name_with_generation(character)
         results_lists[0].append(name_with_gen)
         results_lists[1].append(str(parent.level))
         results_lists[2].append(get_class(parent.class_id).name)
