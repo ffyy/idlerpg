@@ -201,12 +201,12 @@ class Character:
 
     def take_long_rest(self):
         rested_character = Character(self.id_, self.name, self.level, self.bonus, self.current_xp, self.current_hp, self.character_class, self.gear, self.aegis, self.parent_id)
+        if self.is_warlock() and self.bonus < 10:
+            self.warlock_recharge_bonus()
         while rested_character.current_xp >= self.character_class.xp_per_level:
             rested_character.level += 1
             rested_character.current_xp = max(rested_character.current_xp - self.character_class.xp_per_level, 0)
             rested_character.current_hp = rested_character.character_class.max_hp
-            if self.is_warlock() and self.bonus < 5:
-                self.warlock_recharge_bonus()
         rested_character.gear = Gear(self.gear.id_, self.gear.gearscore, self.gear.unattuned)
         rested_character.gear.gearscore += self.gear.unattuned
         rested_character.gear.unattuned = 0
