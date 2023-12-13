@@ -353,7 +353,7 @@ class DungeonMaster:
             completed_quest_lists[1].append(hero.character_class.name)
             completed_quest_lists[2].append(str(hero.level))
             completed_quest_lists[3].append(str(hero.gear.gearscore))
-            completed_quest_lists[4].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
+            completed_quest_lists[4].append(hero.get_hp_bar())
             completed_quest_lists[5].append(str(completed_quest.party_rolls[i]) + " (" + str(raw_roll) + "+" + str(completed_quest.party_bonuses[i]) + ")")
 
         quest_table = make_table(completed_quest_lists)
@@ -520,7 +520,7 @@ class DungeonMaster:
                 raw_roll = party_rolls[i] - party_bonuses[i]
                 hero_strings[0].append(hero.name)
                 hero_strings[1].append(str(hero.level))
-                hero_strings[2].append(make_hp_bar(hero.current_hp, hero.character_class.max_hp))
+                hero_strings[2].append(hero.get_hp_bar())
                 hero_strings[3].append(str(hp_changes[i]))
                 hero_strings[4].append(str(party_rolls[i]) + " (" + str(raw_roll) + "+" + str(party_bonuses[i]) + ")")
 
@@ -684,7 +684,7 @@ class DungeonMaster:
             pvp_report_lists[1].append(fighter.character_class.name)
             pvp_report_lists[2].append(str(fighter.level))
             pvp_report_lists[3].append(str(fighter.gear.gearscore))
-            pvp_report_lists[4].append(make_hp_bar(fighter.current_hp, fighter.character_class.max_hp))
+            pvp_report_lists[4].append(fighter.get_hp_bar())
             pvp_report_lists[5].append(str(pvp_rolls[i]) + " (" + str(raw_roll) + "+" + str(pvp_bonuses[i]) + ")")
 
         pvp_journal = "".join([pvp_journal, (make_table(pvp_report_lists))])
@@ -852,7 +852,7 @@ class DungeonMaster:
         attackers_table_strings.append(["D.Roll"])
         attackers_table_strings.append(["HP"])
         for i,attacker in enumerate(attackers):
-            hp_bar = make_hp_bar(attacker.current_hp, attacker.character_class.max_hp)
+            hp_bar = attacker.get_hp_bar()
             defender_raw_roll = defender_rolls[i] - defender_bonuses[i]
             attacker_raw_roll = attacker_rolls[i] - attacker_bonuses[i]
             attackers_table_strings[0].append(attacker.name)

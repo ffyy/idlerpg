@@ -143,6 +143,15 @@ class Character:
         else:
             return False
 
+    def get_hp_bar(self) -> str:
+        from charutils import make_hp_bar
+        AEGIS_BOOKENDS = "{}"
+        if self.aegis > 0:
+            hp_bar = make_hp_bar(self.current_hp, self.character_class.max_hp, bookends=AEGIS_BOOKENDS)
+        else:
+            hp_bar = make_hp_bar(self.current_hp, self.character_class.max_hp)
+        return hp_bar
+
     def roll_dice(self, temporary_bonus=0) -> int:
         """Roll dice based on the class and bonuses of the character. In case of Warlock, the bonus is reduced after the dice are rolled.
         Because of this, if it is necessary to know the bonus during the rolls (for outcome tables), the character's bonus should be checked BEFORE rolling.
