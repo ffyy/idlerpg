@@ -520,7 +520,7 @@ def parent_search(player_id):
         results_lists.append(["Class"])
         results_lists.append(["GS"])
         results_lists.append(["Cause of death"])
-        name_with_gen = generate_name_with_generation(character)
+        name_with_gen = generate_name_with_generation(parent)
         results_lists[0].append(name_with_gen)
         results_lists[1].append(str(parent.level))
         results_lists[2].append(get_class(parent.class_id).name)
