@@ -155,7 +155,7 @@ async def leaderboard(interaction: discord.Interaction, top_x: typing.Optional[i
     if top_x and top_x > 0 and top_x <= 10:
         leaderboard_report = await create_leaderboard_report(top_x, class_filter)
         await interaction.response.send_message(content=leaderboard_report)
-    elif not top_x:
+    else:
         leaderboard_report = await create_leaderboard_report(10, class_filter)
         await interaction.response.send_message(content=leaderboard_report)
 
