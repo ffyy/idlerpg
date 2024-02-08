@@ -11,6 +11,23 @@ class Gear:
         self.gearscore = gearscore
         self.unattuned = unattuned
 
+class Grave:
+    def __init__(
+            self,
+            character_id,
+            gearscore
+            ):
+        self.character_id = character_id
+        self.gearscore = gearscore
+
+    def create_grave(self):
+        from charutils import create_grave as db_create_grave
+        db_create_grave(self.character_id, self.gearscore)
+
+    def update_grave(self, gs_change=0):
+        from charutils import update_grave
+        update_grave(self.character_id, gs_change)
+
 class CharacterClass:
     def __init__(
             self,
@@ -82,6 +99,11 @@ class Character:
         self.aegis = aegis
         self.parent_id = parent_id
 
+    def bury(self):
+        grave = Grave(self.id_, self.gear.gearscore)
+        print("grave object created")
+        grave.create_grave()
+
     def die(self, reason=-1) -> bool:
         if self.aegis == 1:
             from charutils import update_db_character
@@ -92,6 +114,8 @@ class Character:
         else:
             from charutils import reincarnate
             self.current_hp = 0
+            if reason <= 0 and self.gear.gearscore > 0:
+                self.bury()
             reincarnate(self, reason)
             return True
 

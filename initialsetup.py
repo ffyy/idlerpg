@@ -38,6 +38,7 @@ def do():
     cur.execute("CREATE TABLE IF NOT EXISTS raid_boss(id_ INTEGER NOT NULL PRIMARY KEY, name TEXT UNIQUE NOT NULL, current_hp INTEGER NOT NULL, max_hp INTEGER NOT NULL, boss_type INTEGER NOT NULL, target_level INTEGER NOT NULL)")
     cur.execute("CREATE TABLE IF NOT EXISTS state(daily TEXT, monthly TEXT)")
     #TODO: actually create default state because otherwise initial load fails
+    cur.execute("CREATE TABLE IF NOT EXISTS grave(character_id INTEGER NOT NULL PRIMARY KEY, gearscore INTEGER)")
     cur.executemany("INSERT INTO class VALUES (?, ?, ?, ?, ?, ?, ?, ?)", character_classes)
     cur.executemany("INSERT INTO raid_boss VALUES (?, ?, ?, ?, ?, ?)", raid_bosses)
     db.commit()
