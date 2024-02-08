@@ -24,10 +24,6 @@ class Grave:
         from charutils import create_grave as db_create_grave
         db_create_grave(self.character_id, self.gearscore)
 
-    def update_grave(self, gs_change=0):
-        from charutils import update_grave
-        update_grave(self.character_id, gs_change)
-
 class CharacterClass:
     def __init__(
             self,

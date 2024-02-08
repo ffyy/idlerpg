@@ -349,12 +349,26 @@ def create_grave(character_id, gearscore):
     cur.execute("INSERT INTO grave(character_id, gearscore) VALUES(?, ?)", (character_id, gearscore))
     db.commit()
 
-def update_grave(grave: Grave, gs_change):
-    grave.gearscore += gs_change
+def update_grave(grave: Grave):
     db = sqlite3.connect(DB_PATH)
     cur = db.cursor()
     cur.execute("UPDATE grave SET gearscore = ? WHERE character_id = ?", (grave.gearscore, grave.character_id))
     db.commit()
+
+def get_lootable_graves() -> list[Grave]:
+    db = sqlite3.connect(DB_PATH)
+    cur = db.cursor()
+    cur.execute("SELECT * FROM grave WHERE gearscore > 0")
+    db_graves = cur.fetchall()
+    if db_graves is not None:
+        graves = []
+        for db_grave in db_graves:
+            graves.append(Grave(db_grave[0], db_grave[1]))
+        return graves
+    else:
+        return None
+
+
 #GAME OCCURRENCES
 
 def generate_name_with_generation(character: Character) -> str:

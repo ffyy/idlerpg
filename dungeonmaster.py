@@ -868,9 +868,52 @@ class DungeonMaster:
 
         return event_outcomes
 
+    def raid_tomb(self, party, grave, event_outcomes: EventOutcomes=None) -> EventOutcomes:
+        gs_reward = max(random.randint(1, grave.gearscore)//len(party), 1)
+
+        gravestone_name = charutils.generate_name_with_generation(charutils.get_character_by_id(grave.character_id))
+        if grave.gearscore - gs_reward*len(party) < 0:
+            grave.gearscore = 0
+        else:
+            grave.gearscore -= gs_reward*len(party)
+        charutils.update_grave(grave)
+
+        for hero in party:
+            hero.gear.unattuned += gs_reward
+            charutils.update_db_gear(hero.gear)
+
+        if len(party) == 1:
+            class_quest_journal = "**It's free gear estate!**\n"
+            class_quest_journal = "".join([class_quest_journal, party[0].name])
+            class_quest_journal = " ".join([class_quest_journal, "the"])
+            class_quest_journal = " ".join([class_quest_journal, party[0].character_class.name])
+        else:
+            class_quest_journal = "**Raiders of the lost parts!**\n"
+            for hero in party:
+                if hero != party[0] and hero != party[-1]:
+                    class_quest_journal = "".join([class_quest_journal, ", "])
+                elif hero == party[-1]:
+                    class_quest_journal = " ".join([class_quest_journal, "and "])
+                class_quest_journal = "".join([class_quest_journal, hero.name])
+        class_quest_journal = " ".join([class_quest_journal, "decided to visit the grave of"])
+        class_quest_journal = " ".join([class_quest_journal, gravestone_name])
+        class_quest_journal = ", ".join([class_quest_journal, "which earned them"])
+        if len(party) != 1:
+            class_quest_journal = " ".join([class_quest_journal, "each"])
+        class_quest_journal = " ".join([class_quest_journal, str(gs_reward)])
+        class_quest_journal = " ".join([class_quest_journal, "extra gearscore."])
+
+        if event_outcomes:
+            event_outcomes.outcome_messages.append(class_quest_journal)
+        else:
+            event_outcomes = EventOutcomes([class_quest_journal], [])
+
+        return event_outcomes
+
     def run_class_quest(self, event_outcomes: EventOutcomes=None) -> EventOutcomes:
         """Chooses a class from among classes that have at least one registered character. Generates a party of 1-3 characters of this class and awards free XP to all characters.\n
-        If 2 fighters are chosen, one of them will fight the other for experience and honor.
+        If 2 fighters are chosen, one of them will fight the other for experience and honor.\nOne third of the time, if lootable graves (dead characters who had gear) exist, the
+        chosen characters will go grave robbing and earn gearscore instead of xp instead.
 
         Arguments:
             event_outcomes: if provided, appends the outcome of this event to the provided EventOutcomes
@@ -882,6 +925,13 @@ class DungeonMaster:
         potential_characters = [character for character in all_characters if character.character_class.id_ == chosen_class.id_]
         party_size = min(random.randint(1, len(potential_characters)), 3)
         chosen_party = random.sample(potential_characters, party_size)
+
+        lootable_graveyard = charutils.get_lootable_graves()
+        if lootable_graveyard:
+            if randint(1,3) == 3:
+                grave = random.choice(lootable_graveyard)
+                return self.raid_tomb(chosen_party, grave, event_outcomes)
+
         class_quest_hook = random.choice([line for line in PERSONAL_QUESTS if line[0] == str(chosen_class.id_)])[2:]
         xp_reward = randint(500, 2000)
         #class specific replacement events
