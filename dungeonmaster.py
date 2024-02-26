@@ -574,7 +574,7 @@ class DungeonMaster:
             pvp_bonuses.append(character.bonus + character.gear.gearscore + temporary_bonus)
             character_roll = character.roll_dice(character.gear.gearscore + temporary_bonus)
             pvp_rolls.append(character_roll)
-        xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 10000)
+        xp_reward = min((max(1, pvp_characters[1].level - pvp_characters[0].level) * 1000), 100000)
         hp_loss = abs(pvp_rolls[0] - pvp_rolls[1])
         if pvp_rolls[0] >= pvp_rolls[1]:
             ganker_statistics.ganks_won += 1
@@ -897,6 +897,7 @@ class DungeonMaster:
                 class_quest_journal = "".join([class_quest_journal, hero.name])
         class_quest_journal = " ".join([class_quest_journal, "decided to visit the grave of"])
         class_quest_journal = " ".join([class_quest_journal, gravestone_name])
+        class_quest_journal = " ".join([class_quest_journal, "and picked up a few items on the way"])
         class_quest_journal = ", ".join([class_quest_journal, "which earned them"])
         if len(party) != 1:
             class_quest_journal = " ".join([class_quest_journal, "each"])
